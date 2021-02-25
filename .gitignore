@@ -1,0 +1,9 @@
+# CMake
+build
+
+# Vim
+*.swp
+*.swo
+
+# Ignore Mac specific files
+.DS_Store

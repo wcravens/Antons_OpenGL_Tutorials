@@ -10,7 +10,7 @@ void abort( const std::string message );
 void quit();
 void quit( const std::string message );
 
-GLFWwindow* initialize_window();
+GLFWwindow* init_window( int width, int height, const char* title );
 
 void initialize_glew();
 void log_gl_version_info();
@@ -47,22 +47,7 @@ const char* fragment_shader =
 int main() {
   if( !glfwInit() ) abort( "Could not start GLFW3" );
 
-  GLFWwindow* window = initialize_window();
-
-//  #ifdef __APPLE__
-//    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-//    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//  #endif
-//
-//  window = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
-//  if( !window ) {
-//    glfwTerminate();
-//    abort( "Could not open window with GLFW3" );
-//  }
-//  glfwMakeContextCurrent( window );
-
+  GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );
   initialize_glew();
   log_gl_version_info();
   init_gl();
@@ -125,14 +110,14 @@ void init_gl(){
   glDepthFunc( GL_LESS );
 }
 
-GLFWwindow* initialize_window(){
+GLFWwindow* init_window( int width, int height, const char* title ){
   #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
-  GLFWwindow* w = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
+  GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
   if( !w ) {
     glfwTerminate();
     abort( "Could not open window with GLFW3" );

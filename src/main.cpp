@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-
 void log( const std::string message );
 void log_error( const std::string message );
 void abort();
@@ -18,6 +17,7 @@ void init_gl();
 void terminate_window();
 
 GLuint init_triangle_vao( const GLfloat* data ); 
+GLuint init_shader_program();
 
 const int WINDOW_HEIGHT=1600;
 const int WINDOW_WIDTH=1200;
@@ -62,23 +62,13 @@ int main() {
   }
   glfwMakeContextCurrent( window );
   initialize_glew();
+
   log_gl_version_info();
   init_gl();
 
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
+  GLuint shaderProgramId = init_shader_program();
 
-  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
-  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
-  glCompileShader( vertexShaderId );
-
-  GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
-  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
-  glCompileShader( fragmentShaderId );
-
-  GLuint shaderProgramId = glCreateProgram();
-  glAttachShader( shaderProgramId, vertexShaderId );
-  glAttachShader( shaderProgramId, fragmentShaderId );
-  glLinkProgram( shaderProgramId );
 
   while( !glfwWindowShouldClose( window ) ){
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -172,3 +162,19 @@ GLuint init_triangle_vao( const GLfloat* data ) {
   return vboId;
 }
 
+GLuint init_shader_program(){
+  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
+  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
+  glCompileShader( vertexShaderId );
+
+  GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
+  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
+  glCompileShader( fragmentShaderId );
+
+  GLuint shaderProgramId = glCreateProgram();
+  glAttachShader( shaderProgramId, vertexShaderId );
+  glAttachShader( shaderProgramId, fragmentShaderId );
+  glLinkProgram( shaderProgramId );
+
+  return shaderProgramId;
+}

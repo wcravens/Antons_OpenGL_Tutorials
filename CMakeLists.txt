@@ -9,9 +9,9 @@ add_executable( ogltut src/main.cpp )
 
 include_directories( "include" )
 
-#find_package( glfw3 3.3 REQUIRED)
+find_package( GLEW REQUIRED )
+find_package( glfw3 3.3 REQUIRED)
 find_package( OpenGL REQUIRED )
 #find_package( glm REQUIRED )
 
-#target_link_libraries( learngl glfw glm::glm OpenGL::GL ${CMAKE_DL_LIBS} )
-target_link_libraries( ogltut OpenGL::GL ${CMAKE_DL_LIBS} )
+target_link_libraries( ogltut GLEW glfw OpenGL::GL ${CMAKE_DL_LIBS} )

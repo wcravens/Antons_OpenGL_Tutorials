@@ -1,2 +1,1 @@
-# antons_opengl_tutorials
-Following https://antongerdelan.net/opengl/.
+# [Antons_OpenGL_Tutorials](https://antongerdelan.net/opengl/)

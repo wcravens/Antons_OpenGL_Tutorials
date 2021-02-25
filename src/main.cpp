@@ -17,13 +17,13 @@ void log_gl_version_info();
 void init_gl();
 void terminate_window();
 
-GLuint init_triangle_vbo( const float* data ); 
+GLuint init_triangle_vbo( const GLfloat* data ); 
 
 const int WINDOW_HEIGHT=1600;
 const int WINDOW_WIDTH=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
 
-const float triangleVerts[] = {
+const GLfloat triangleVerts[] = {
    0.0f,  0.5f,  0.0f,
    0.5f, -0.5f,  0.0f,
   -0.5f, -0.5f,  0.0f
@@ -106,7 +106,7 @@ void terminate_window(){
   quit();
 }
 
-GLuint init_triangle_vbo( const float* data ) {
+GLuint init_triangle_vbo( const GLfloat* data ) {
   GLuint vboId;
   glGenBuffers(1, &vboId );
   glBindBuffer( GL_ARRAY_BUFFER, vboId );

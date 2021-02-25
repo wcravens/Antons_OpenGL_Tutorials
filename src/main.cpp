@@ -10,7 +10,8 @@ void abort( const std::string message );
 void quit();
 void quit( const std::string message );
 
-void initialize_window( GLFWwindow* w);
+GLFWwindow* initialize_window();
+
 void initialize_glew();
 void log_gl_version_info();
 void init_gl();
@@ -46,30 +47,30 @@ const char* fragment_shader =
 int main() {
   if( !glfwInit() ) abort( "Could not start GLFW3" );
 
-  GLFWwindow* window;
-  //initialize_window( window );
-  #ifdef __APPLE__
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  #endif
+  GLFWwindow* window = initialize_window();
 
-  window = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
-  if( !window ) {
-    glfwTerminate();
-    abort( "Could not open window with GLFW3" );
-  }
-  glfwMakeContextCurrent( window );
+//  #ifdef __APPLE__
+//    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+//    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+//    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+//  #endif
+//
+//  window = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
+//  if( !window ) {
+//    glfwTerminate();
+//    abort( "Could not open window with GLFW3" );
+//  }
+//  glfwMakeContextCurrent( window );
+
   initialize_glew();
-
   log_gl_version_info();
   init_gl();
 
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   GLuint shaderProgramId = init_shader_program();
 
-
+  // render loop
   while( !glfwWindowShouldClose( window ) ){
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glUseProgram( shaderProgramId );
@@ -78,7 +79,6 @@ int main() {
     glfwPollEvents();
     glfwSwapBuffers( window );
   }
-
 
   terminate_window();
 }
@@ -125,20 +125,20 @@ void init_gl(){
   glDepthFunc( GL_LESS );
 }
 
-void initialize_window( GLFWwindow* w ){
+GLFWwindow* initialize_window(){
   #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
-
-  w = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
+  GLFWwindow* w = glfwCreateWindow( WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
     glfwTerminate();
     abort( "Could not open window with GLFW3" );
   }
   glfwMakeContextCurrent( w );
+  return w;
 }
 
 void terminate_window(){

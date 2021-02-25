@@ -20,8 +20,8 @@ void terminate_window();
 GLuint init_triangle_vao( const GLfloat* data ); 
 GLuint init_shader_program();
 
-const int WINDOW_HEIGHT=1600;
 const int WINDOW_WIDTH=1200;
+const int WINDOW_HEIGHT=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
 
 const GLfloat triangleVerts[] = {

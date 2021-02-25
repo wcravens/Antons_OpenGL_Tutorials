@@ -29,6 +29,20 @@ const GLfloat triangleVerts[] = {
   -0.5f, -0.5f,  0.0f
 };
 
+const char* vertex_shader =
+"#version 400\n"
+"in vec3 vertexCoord;"
+"void main() {"
+"  gl_Position = vec4(vertexCoord, 1.0);"
+"}";
+
+const char* fragment_shader =
+"#version 400\n"
+"out vec4 frag_colour;"
+"void main() {"
+"  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
+"}";
+
 int main() {
   if( !glfwInit() ) abort( "Could not start GLFW3" );
 
@@ -39,8 +53,24 @@ int main() {
   init_gl();
 
   GLuint triangleVboId = init_triangle_vbo( triangleVerts );
-  terminate_window();
 
+  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
+  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
+  glCompileShader( vertexShaderId );
+
+  GLuint fragmentShaderId = glCreateShader( GL_VERTEX_SHADER );
+  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
+  glCompileShader( fragmentShaderId );
+
+  GLuint shaderProgramId = glCreateProgram();
+  glAttachShader( shaderProgramId, vertexShaderId );
+  glAttachShader( shaderProgramId, fragmentShaderId );
+  glLinkProgram( shaderProgramId );
+
+
+
+
+  terminate_window();
 }
 
 void log( const std::string message ) {

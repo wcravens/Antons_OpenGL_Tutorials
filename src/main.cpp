@@ -17,6 +17,8 @@ void log_gl_version_info();
 void init_gl();
 void terminate_window();
 
+GLuint init_triangle_vbo( const float* data ); 
+
 const int WINDOW_HEIGHT=1600;
 const int WINDOW_WIDTH=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
@@ -34,10 +36,9 @@ int main() {
   initialize_window( window );
   initialize_glew();
   log_gl_version_info();
-
   init_gl();
 
-
+  GLuint triangleVboId = init_triangle_vbo( triangleVerts );
   terminate_window();
 
 }
@@ -103,5 +104,21 @@ void initialize_window( GLFWwindow* w ){
 void terminate_window(){
   glfwTerminate();
   quit();
+}
+
+GLuint init_triangle_vbo( const float* data ) {
+  GLuint vboId;
+  glGenBuffers(1, &vboId );
+  glBindBuffer( GL_ARRAY_BUFFER, vboId );
+  glBufferData( GL_ARRAY_BUFFER, sizeof( data ), data, GL_STATIC_DRAW );
+
+  GLuint vaoId;
+  glGenVertexArrays( 1, &vaoId );
+  glBindVertexArray( vaoId );
+  glEnableVertexAttribArray( 0 );
+  glBindBuffer( GL_ARRAY_BUFFER, vboId );
+  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, NULL );
+
+  return vboId;
 }
 

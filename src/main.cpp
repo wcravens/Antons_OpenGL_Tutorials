@@ -14,11 +14,18 @@ void quit( const std::string message );
 void initialize_window( GLFWwindow* w);
 void initialize_glew();
 void log_gl_version_info();
+void init_gl();
 void terminate_window();
 
 const int WINDOW_HEIGHT=1600;
 const int WINDOW_WIDTH=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
+
+const float triangleVerts[] = {
+   0.0f,  0.5f,  0.0f,
+   0.5f, -0.5f,  0.0f,
+  -0.5f, -0.5f,  0.0f
+};
 
 int main() {
   if( !glfwInit() ) abort( "Could not start GLFW3" );
@@ -28,8 +35,8 @@ int main() {
   initialize_glew();
   log_gl_version_info();
 
-  glEnable( GL_DEPTH_TEST );
-  glDepthFunc( GL_LESS );
+  init_gl();
+
 
   terminate_window();
 
@@ -70,6 +77,11 @@ void log_gl_version_info(){
   const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
   log( "Renderer: " + std::string( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) ) );
   log( "OpenGL Version support: " + version );
+}
+
+void init_gl(){
+  glEnable( GL_DEPTH_TEST );
+  glDepthFunc( GL_LESS );
 }
 
 void initialize_window( GLFWwindow* w ){

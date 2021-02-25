@@ -25,9 +25,9 @@ const int WINDOW_HEIGHT=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
 
 const GLfloat triangleVerts[] = {
-   0.0f,  0.5f,  0.0f,
-   0.5f, -0.5f,  0.0f,
-  -0.5f, -0.5f,  0.0f
+   0.25f,  0.75/2.0,  0.0f, // top
+   0.5f,  0.0f,  0.0f, // lower right
+   0.0f,  0.0f,  0.0f  // lower left
 };
 
 const char* vertex_shader =

@@ -2,6 +2,6 @@
 
 Starting a log file.
 
-Setting a Minimmum OpenGL Version to Use
+Setting a Minimmum OpenGL Version to Use.
 
-
+Anti-Aliasing

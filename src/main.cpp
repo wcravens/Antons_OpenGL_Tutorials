@@ -185,6 +185,7 @@ GLFWwindow* init_window( int width, int height, const char* title ){
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
+  glfwWindowHint( GLFW_SAMPLES, 4 );
   GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
   if( !w ) {
     glfwTerminate();

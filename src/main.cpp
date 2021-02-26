@@ -1,11 +1,19 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <assert.h>
+#include <time.h>
+#include <stdarg.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-const int WINDOW_WIDTH=1200;
-const int WINDOW_HEIGHT=1200;
-const char* WINDOW_TITLE="Antons OpenGL Tutorial";
+#define GL_LOG_FILE "ogltut_gl.log"
+
+#define WINDOW_WIDTH        1200
+#define WINDOW_HEIGHT       1200
+#define WINDOW_TITLE        "Antons OpenGL Tutorial"
+#define WINDOW_FULL_SCREEN  0
 
 const GLfloat triangleVerts[] = {
    0.25f,  0.75/2.0,  0.0f, // top
@@ -27,13 +35,15 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
+int g_gl_width  = WINDOW_WIDTH;
+int g_gl_height = WINDOW_HEIGHT;
 
 void log( const std::string message ) {
-  std::cout << "LOG::" << message << "." << std::endl;
+  std::cout << "LOG::" << message << ".";
 }
 
 void log_error( const std::string message ){
-  std::cerr << "ERROR::" << message << "!" << std::endl;
+  std::cerr << "ERROR::" << message << "!";
 }
 
 void abort(){
@@ -52,7 +62,113 @@ void quit( const std::string message ){
   log( "QUIT::" + message );
 }
 
+bool restart_gl_log(){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::trunc );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
 
+  // We may also be able to use __DATE__ and __TIME__ with `gcc`.
+  time_t now = time( NULL );
+  char* date = ctime( &now );
+  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date;
+  ofs.close();
+  return true;
+}
+
+bool gl_log( const char* message ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
+  ofs << "INFO::GL_LOG::" << message << std::endl;
+  ofs.close();
+  return true;
+}
+
+bool gl_log_error( const char* message ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
+  std::cerr << "ERROR::" << message << std::endl;
+  ofs << "ERROR::" << message << std::endl;
+  ofs.close();
+  return true;
+}
+
+void gl_log_params() {
+  GLenum params[] = {
+    GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+    GL_MAX_CUBE_MAP_TEXTURE_SIZE,
+    GL_MAX_DRAW_BUFFERS,
+    GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,
+    GL_MAX_TEXTURE_IMAGE_UNITS,
+    GL_MAX_TEXTURE_SIZE,
+    GL_MAX_VARYING_FLOATS,
+    GL_MAX_VERTEX_ATTRIBS,
+    GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+    GL_MAX_VERTEX_UNIFORM_COMPONENTS,
+    GL_MAX_VIEWPORT_DIMS,
+    GL_STEREO,
+  };
+  const char* names[] = {
+    "GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_CUBE_MAP_TEXTURE_SIZE",
+    "GL_MAX_DRAW_BUFFERS",
+    "GL_MAX_FRAGMENT_UNIFORM_COMPONENTS",
+    "GL_MAX_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_TEXTURE_SIZE",
+    "GL_MAX_VARYING_FLOATS",
+    "GL_MAX_VERTEX_ATTRIBS",
+    "GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_VERTEX_UNIFORM_COMPONENTS",
+    "GL_MAX_VIEWPORT_DIMS",
+    "GL_STEREO",
+  };
+  std::stringstream ss;
+  gl_log("GL Context Params:");
+  gl_log("-----------------------------");
+  char msg[256];
+  // integers - only works if the order is 0-10 integer return types
+  for (int i = 0; i < 10; i++) {
+    int v = 0;
+    glGetIntegerv(params[i], &v);
+    ss << names[i] << ": " << v;
+    gl_log( ss.str().c_str() );
+    ss.clear();
+    ss.str("");
+  }
+  // others
+  int v[2];
+  v[0] = v[1] = 0;
+  glGetIntegerv(params[10], v);
+  ss << names[10] << ": " << v[0] << " " << v[1];
+  gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
+  unsigned char s = 0;
+  glGetBooleanv(params[11], &s);
+  ss << names[11] << ": " << (unsigned int)s;
+  gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
+  gl_log("-----------------------------\n");
+}
+
+void glfw_error_callback( int error, const char* description ){
+  std::string msg( "GLFW::" + std::to_string( error ) + "::" + description );
+  gl_log_error( msg.c_str() ); 
+}
+
+void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
+  g_gl_width  = width;
+  g_gl_height = height;
+  /* Update perspective matrices here */
+}
 
 void init_gl(){
   glEnable( GL_DEPTH_TEST );
@@ -67,7 +183,15 @@ void init_glew(){
 }
 
 void init_glfw() {
-  if( !glfwInit() ) abort( "Could not start GLFW3" );
+  std::string msg( "GLFW::STARTING::" );
+  msg.append( glfwGetVersionString() );
+  gl_log( msg.c_str() );
+  glfwSetErrorCallback( glfw_error_callback );
+  if( !glfwInit() ){
+    const char* msg = "Could not start glfw.";
+    gl_log_error( msg );
+    abort( "Could not start GLFW3" );
+  }
 }
 
 void log_gl_version_info(){
@@ -77,7 +201,7 @@ void log_gl_version_info(){
 }
 
 void process_input( GLFWwindow* window ) {
-  // escape
+  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html 
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 }
@@ -121,38 +245,93 @@ GLuint init_triangle_vao( const GLfloat* data ) {
   return vboId;
 }
 
-GLFWwindow* init_window( int width, int height, const char* title ){
+GLFWwindow* init_window(){
+  std::stringstream ss;
+
   #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
-  GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
+  glfwWindowHint( GLFW_SAMPLES, 4 );
+
+  GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
+  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height << 
+                ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
+                ",refreshRate:" << videoMode->refreshRate;
+  gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
+
+  if( WINDOW_FULL_SCREEN ){
+    g_gl_width  = videoMode->width;
+    g_gl_height = videoMode->height;
+    char tmp[128];
+    sprintf( tmp, "INIT_WINDOW::Full screen window. width: %d, height: %d.", g_gl_width, g_gl_height );
+    gl_log( tmp );
+  }
+  char tmp[128];
+  sprintf( tmp, "INIT_WINDOW::width: %d, height: %d, title: %s.", g_gl_width, g_gl_height, WINDOW_TITLE );
+  gl_log( tmp ); 
+
+  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
     glfwTerminate();
-    abort( "Could not open window with GLFW3" );
+    const char* msg = "INIT_WINDOW::Could not open window with GLFW3.";
+    gl_log_error( msg );
+    abort( msg );
   }
   glfwMakeContextCurrent( w );
+  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
+  gl_log_params();
   return w;
+}
+
+#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
+void _update_fps_counter( GLFWwindow* window ){
+  static double previous_seconds = glfwGetTime();
+  static int frame_count;
+  double current_seconds = glfwGetTime();
+  double elapsed_seconds = current_seconds - previous_seconds;
+  if( elapsed_seconds > WINDOW_TITLE_FPS_DEBOUNCE ) {
+    previous_seconds = current_seconds; 
+    double fps = (double)frame_count / elapsed_seconds;
+    char tmp[128];
+    sprintf( tmp, "WINDOW_TITLE : drawing @ %.2f fps", fps );
+    glfwSetWindowTitle( window, tmp );
+    frame_count = 0;
+  }
+  frame_count++;
 }
 
 void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
   while( !glfwWindowShouldClose( window ) ){
+    _update_fps_counter( window );
+    // New buffer state
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glViewport( 0, 0, g_gl_width, g_gl_height );
+
+    // Drawing
     glUseProgram( shaderId );
     glBindVertexArray( vaoId );
     glDrawArrays( GL_TRIANGLES, 0, 3 );
+
+    // Buffer
+    glfwSwapBuffers( window );
+
+    // Intermittent Events
     glfwPollEvents();
     process_input( window );
-    glfwSwapBuffers( window );
   }
 }
 
 int main() {
+  assert( restart_gl_log() );
   init_glfw();
 
-  GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );
+  GLFWwindow* window = init_window();
   init_glew();
   log_gl_version_info();
   init_gl();

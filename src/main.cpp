@@ -34,9 +34,29 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
-GLFWwindow* init_window( int width, int height, const char* title );
+GLFWwindow* init_window( int width, int height, const char* title ){
+  #ifdef __APPLE__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  #endif
+  GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
+  if( !w ) {
+    glfwTerminate();
+    abort( "Could not open window with GLFW3" );
+  }
+  glfwMakeContextCurrent( w );
+  return w;
+}
 
-void initialize_glew();
+void init_glew(){
+  glewExperimental = GL_TRUE;
+  glewInit();
+  if (glewInit() != GLEW_OK)
+      abort( "Failed to initialize GLEW");
+}
+
 void log_gl_version_info();
 void init_gl();
 void terminate_window();
@@ -71,7 +91,7 @@ int main() {
   init_glfw();
 
   GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );
-  initialize_glew();
+  init_glew();
   log_gl_version_info();
   init_gl();
 
@@ -107,12 +127,6 @@ void quit( const std::string message ){
   log( "QUIT::" + message );
 }
 
-void initialize_glew(){
-  glewExperimental = GL_TRUE;
-  glewInit();
-  if (glewInit() != GLEW_OK)
-      abort( "Failed to initialize GLEW");
-}
 
 void log_gl_version_info(){
   const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
@@ -125,21 +139,6 @@ void init_gl(){
   glDepthFunc( GL_LESS );
 }
 
-GLFWwindow* init_window( int width, int height, const char* title ){
-  #ifdef __APPLE__
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  #endif
-  GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
-  if( !w ) {
-    glfwTerminate();
-    abort( "Could not open window with GLFW3" );
-  }
-  glfwMakeContextCurrent( w );
-  return w;
-}
 
 void terminate_window(){
   glfwTerminate();

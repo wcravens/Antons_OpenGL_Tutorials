@@ -212,8 +212,8 @@ void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
     glBindVertexArray( vaoId );
     glDrawArrays( GL_TRIANGLES, 0, 3 );
     glfwPollEvents();
-    process_input( window );
     glfwSwapBuffers( window );
+    process_input( window );
   }
 }
 

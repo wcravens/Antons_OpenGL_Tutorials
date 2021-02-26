@@ -11,9 +11,9 @@
 #define GL_LOG_FILE "ogltut_gl.log"
 
 // TODO: Convert to #define's
-const int WINDOW_WIDTH=1200;
-const int WINDOW_HEIGHT=1200;
-const char* WINDOW_TITLE="Antons OpenGL Tutorial";
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 1200
+#define WINDOW_TITLE "Antons OpenGL Tutorial"
 
 const GLfloat triangleVerts[] = {
    0.25f,  0.75/2.0,  0.0f, // top
@@ -35,6 +35,8 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
+int g_gl_width = WINDOW_WIDTH;
+int g_gl_height = WINDOW_HEIGHT;
 
 void log( const std::string message ) {
   std::cout << "LOG::" << message << "." << std::endl;
@@ -103,6 +105,11 @@ void glfw_error_callback( int error, const char* description ){
   gl_log_error( msg.c_str() ); 
 }
 
+void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
+  g_gl_width = width;
+  g_gl_height = height;
+  /* Update perspective matrices here */
+}
 
 void init_gl(){
   glEnable( GL_DEPTH_TEST );
@@ -135,7 +142,7 @@ void log_gl_version_info(){
 }
 
 void process_input( GLFWwindow* window ) {
-  // escape
+  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html 
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 }
@@ -194,7 +201,10 @@ GLFWwindow* init_window( int width, int height, const char* title ){
   ss << "width:" << videoMode->width << ",height:" << videoMode->height << 
                 ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
                 ",refreshRate:" << videoMode->refreshRate;
-  GLFWwindow* w = glfwCreateWindow( videoMode->width, videoMode->height, title, monitor, NULL );
+  g_gl_width = videoMode->width;
+  g_gl_height = videoMode->height;
+  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, title, monitor, NULL );
+  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
   gl_log( ss.str().c_str() );
 
   if( !w ) {
@@ -221,7 +231,7 @@ int main() {
   assert( restart_gl_log() );
   init_glfw();
 
-  GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );
+  GLFWwindow* window = init_window( g_gl_width, g_gl_height, WINDOW_TITLE );
   init_glew();
   log_gl_version_info();
   init_gl();

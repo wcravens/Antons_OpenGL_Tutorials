@@ -8,3 +8,8 @@ Anti-Aliasing.
 
 Window Resolution, Monitor Selection and Full-Screen Mode.
 
+Window resizeing callback.
+
+
+
+

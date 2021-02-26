@@ -156,5 +156,70 @@ The hardware pipeline expects the first vec4 output from the Fragment
 Shader to represent an rbga value.  Each element is a float from 0.0 to
 1.0.  Alpha channel effects are determined by the **blend mode**.
 
+## Minimal Shader Code
+
+Recall that each individual shader is a small c-like programm that.  The
+shaders then need to be linked together to create a full GPU hardware
+piepeline program.
+
+Here are the basic steps:
+
+1.  load a *vertex shader file* and *fragment shader file* from disk and store each in a separate C string
+2.  call `glCreateShader` twice; for 1 vertex and 1 fragment shader index
+3.  call `glShaderSource` to copy code from a string for each of the above
+4.  call `glCompileShader` for both shader indices
+5.  call `glCreateProgram` to create an index to a new program
+6.  call `glAttachShader twice,` to attach both shader indices to the program
+7.  call `glLinkProgram`
+8.  call `glGetUniformLocation` to get the unique location (memory address) of the `uniform` variable called `inputColour`
+9.  call `glUseProgram` to switch to your shader before calling
+10. call `glUniform4f(location, r,g,b,a)` to assign an initial colour to your fragment shader (e.g. `glUniform4f(colour_loc, 1.0f, 0.0f, 0.0f, 1.0f)` for red)
+
+You will need to keep track of the ID's (indexes) that are created by
+`glCreateProgram` and any `uniform` locations you need.  They should
+both be `GLuint`s.
+
+Be aware that the `glUniform` function operates on the last program that
+was set active by the `glUseProgram( id )` function.
+
+## OpenGL Shader Functions
+
+[Shader Functions - Official GLSL Reference card ](https://www.khronos.org/files/opengl42-quick-reference-card.pdf)
+
+### Most regularly used **Shader functions**:
+
+`glCreateShader()`: create an OpenGL shader variable and return a reference index (`GLuint`)
+`glShaderSource()`: copy shader code from C string into an OpenGL shader variable.
+`glCompileShader()`: compile an OpenGL shader variable
+`glGetShaderiv()`: return an `int` value for a shader parameter[1]
+
+(1) Valid shader parameters are `GL_SHADER_TYPE`, `GL_DELETE_STATUS`,
+`GL_COMPILE_STATUS`, `GL_INFO_LOG_LENGTH`, and
+`GL_SHADER_SOURCE_LENGTH`.
+
+### Most regularly used **Program functions**:
+
+`glCreateProgram()`: create an OpenGL program variable and return a reference (index) as `GLuint`.
+`glAttacheShader()`: attach a compiled OpenGL shader variable to a shader program variable.
+`glLinkProgram()`: link the shaderes into a complete program once all indivividual shaders have been attached.
+`glValidateProgram()`: check if a program is ready.  information is stored in a log.
+`glGetProgramiv()`: return an `int` value for a program parameter[2]
+`glGetProgramInfoLog()`: information from `glLinkProgram` and `glValidateProgram` returned as a C-string.
+`glUseProgram()`: switch hardware pipeline to a specified shader program.
+`glGetActiveAttrib()`: get details of an active (linked) attribute in the program. [3]
+`glGetAttribLocation()`: get the unique index identifier of a named attribute.
+`glGetuniformLocation()`: get the unique index identifier of a named `uniform` variable.
+`glGetActiveUniform()`: get details of an active (linked) `uniform` varible in the program. [3]
+`glUniform{1,2,3,4}{i,f,d}()`: Set the value of a `uniform` variable.  *function name varies by dimensionality and type*.
+`glUniform{1,2,3,4}{i,f,d}v()`: Same as above but with a whole vector (`array`) of values at a time.
+`glUniformMatrix{2,3,4}{f,d}v()`: same as above but for n `x` n matricies of 2,3, or 4 elements.
 
 
+
+
+(2) Valid program parameters are: `GL_DELETE_STATUS`, `GL_LINK_STATUS`,
+`GL_VALIDATE_STATUS`, `GL_INFO_LOG_LENGTH`, `GL_ATTACHED_SHADERS`,
+`GL_ACTIVE_ATTRIBUTES`, `GL_ACTIVE_ATTRIBUTE_MAX_LENGTH`,
+`GL_ACTIVE_UNIFORMS`, and `GL_ACTIVE_UNIFORM_MAX_LENGTH`.
+
+(3)`glGetProgram` with `GL_ACTIVE_ATTRIBUTES` will give you a list of active attributes.

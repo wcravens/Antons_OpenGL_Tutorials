@@ -36,4 +36,19 @@ parallel.
 It's worth remembering that we only *draw* one mesh at a time.  Thus
 keeping the number of meshes drawn per-scene can be beneficial.
 
+## Difference between fragments and pixels.
+
+Pixels are individual elements of the final 2D image that we draw to our
+screen.  Fragments are pixel sized areas of a virtual surface in our
+projection.  Fragment Shaders determine the final color of every
+fragment.  There could be several of them overlapping each other for
+any given picture.  All of these fragements are drawn - even the hidden
+ones.
+
+All fragements are drawn and written into the framebuffer image that
+will be displayed as the final pixels.  If depth testing is enabled then
+fragments that are *on top of* other fragments will overwrite them in
+the buffers. Some GPUs are smart enough to catch this and skip drawing
+*hidden* fragments.  But this is difficult in practice, and so we will
+end up executing huge numbers of redundant fragment shaders.
 

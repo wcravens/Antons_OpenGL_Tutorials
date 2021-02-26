@@ -59,7 +59,7 @@ void quit( const std::string message ){
 }
 
 bool restart_gl_log(){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::trunc );
   if( ! ofs.is_open() ){
     std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
     return false;
@@ -68,7 +68,7 @@ bool restart_gl_log(){
   // We may also be able to use __DATE__ and __TIME__ with `gcc`.
   time_t now = time( NULL );
   char* date = ctime( &now );
-  ofs << "GL_LOG_FILE log. local time "<< date << std::endl;
+  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date << std::endl;
   ofs.close();
   return true;
 }
@@ -76,10 +76,22 @@ bool restart_gl_log(){
 bool gl_log( const char* message ){
   std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
   if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
     return false;
   }
-  ofs << message << std::endl;
+  ofs << "INFO::" << message << std::endl;
+  ofs.close();
+  return true;
+}
+
+bool gl_log_err( const char* message ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
+  std::cerr << "ERROR::" << message << std::endl;
+  ofs << "ERROR::" << message << std::endl;
   ofs.close();
   return true;
 }

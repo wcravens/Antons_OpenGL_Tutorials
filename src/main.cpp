@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <assert.h>
 #include <time.h>
 #include <stdarg.h>
 
@@ -68,7 +69,7 @@ bool restart_gl_log(){
   // We may also be able to use __DATE__ and __TIME__ with `gcc`.
   time_t now = time( NULL );
   char* date = ctime( &now );
-  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date << std::endl;
+  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date;
   ofs.close();
   return true;
 }
@@ -84,7 +85,7 @@ bool gl_log( const char* message ){
   return true;
 }
 
-bool gl_log_err( const char* message ){
+bool gl_log_error( const char* message ){
   std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
   if( ! ofs.is_open() ){
     std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
@@ -94,6 +95,11 @@ bool gl_log_err( const char* message ){
   ofs << "ERROR::" << message << std::endl;
   ofs.close();
   return true;
+}
+
+void glfw_error_callback( int error, const char* description ){
+  std::string msg( "GLFW::" + std::to_string( error ) + "::" + description );
+  gl_log_error( msg.c_str() ); 
 }
 
 
@@ -110,6 +116,10 @@ void init_glew(){
 }
 
 void init_glfw() {
+  std::string msg( "GLFW::STARTING::" );
+  msg.append( glfwGetVersionString() );
+  gl_log( msg.c_str() );
+  glfwSetErrorCallback( glfw_error_callback );
   if( !glfwInit() ) abort( "Could not start GLFW3" );
 }
 
@@ -193,6 +203,7 @@ void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
 }
 
 int main() {
+  assert( restart_gl_log() );
   init_glfw();
 
   GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );

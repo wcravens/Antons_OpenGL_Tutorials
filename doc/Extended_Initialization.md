@@ -1,18 +1,18 @@
 # [Extended Initialization](https://antongerdelan.net/opengl/glcontext2.html)
 
-Starting a log file.
+## Starting a log file.
 
-Setting a Minimmum OpenGL Version to Use.
+## Setting a Minimmum OpenGL Version to Use.
 
-Anti-Aliasing.
+## Anti-Aliasing.
 
-Window Resolution, Monitor Selection and Full-Screen Mode.
+## Window Resolution, Monitor Selection and Full-Screen Mode.
 
-Window resizeing callback.
+## Window resizeing callback.
 
-Printing Parameters from the GL Context
+## Printing Parameters from the GL Context
 
-Monitoring the GL State Machine
+## Monitoring the GL State Machine
 
 Once we set a parameter in the OpengGL State Machine it is then globally
 available to all OpenGL operations, eg. Drawing Operations.
@@ -31,10 +31,10 @@ the GL Paramereter logging that has been impemented. It's superflous to
 routinely log many of these, but it's worth remembering this   when
 debugging more awkward situation.
 
-Frame Rate Counter
+## Frame Rate Counter
 
 There are really good notes in the main text about early optimization
 and the potential insignificance of the reported frame rate until your
 application has noticible efficientcy issues.
 
-
+## Extending Further

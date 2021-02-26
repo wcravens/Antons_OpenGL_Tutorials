@@ -10,16 +10,6 @@ void abort( const std::string message );
 void quit();
 void quit( const std::string message );
 
-GLFWwindow* init_window( int width, int height, const char* title );
-
-void initialize_glew();
-void log_gl_version_info();
-void init_gl();
-void terminate_window();
-
-GLuint init_triangle_vao( const GLfloat* data ); 
-GLuint init_shader_program();
-
 const int WINDOW_WIDTH=1200;
 const int WINDOW_HEIGHT=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
@@ -44,8 +34,41 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
-int main() {
+GLFWwindow* init_window( int width, int height, const char* title );
+
+void initialize_glew();
+void log_gl_version_info();
+void init_gl();
+void terminate_window();
+
+GLuint init_triangle_vao( const GLfloat* data ); 
+GLuint init_shader_program();
+
+void init_glfw() {
   if( !glfwInit() ) abort( "Could not start GLFW3" );
+}
+
+
+void process_input( GLFWwindow* window ) {
+  // escape
+  if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+}
+
+void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
+  while( !glfwWindowShouldClose( window ) ){
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glUseProgram( shaderId );
+    glBindVertexArray( vaoId );
+    glDrawArrays( GL_TRIANGLES, 0, 3 );
+    glfwPollEvents();
+    process_input( window );
+    glfwSwapBuffers( window );
+  }
+}
+
+int main() {
+  init_glfw();
 
   GLFWwindow* window = init_window( WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE );
   initialize_glew();
@@ -55,15 +78,7 @@ int main() {
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   GLuint shaderProgramId = init_shader_program();
 
-  // render loop
-  while( !glfwWindowShouldClose( window ) ){
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glUseProgram( shaderProgramId );
-    glBindVertexArray( triangleVaoId );
-    glDrawArrays( GL_TRIANGLES, 0, 3 );
-    glfwPollEvents();
-    glfwSwapBuffers( window );
-  }
+  render_loop( window, shaderProgramId, triangleVaoId );
 
   terminate_window();
 }

@@ -4,4 +4,7 @@ Starting a log file.
 
 Setting a Minimmum OpenGL Version to Use.
 
-Anti-Aliasing
+Anti-Aliasing.
+
+Window Resolution, Monitor Selection and Full-Screen Mode.
+

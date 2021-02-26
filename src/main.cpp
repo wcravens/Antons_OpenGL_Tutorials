@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <assert.h>
 #include <time.h>
 #include <stdarg.h>
@@ -186,7 +187,16 @@ GLFWwindow* init_window( int width, int height, const char* title ){
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
   glfwWindowHint( GLFW_SAMPLES, 4 );
-  GLFWwindow* w = glfwCreateWindow( width, height, title, NULL, NULL );
+
+  GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
+  std::stringstream ss;
+  ss << "width:" << videoMode->width << ",height:" << videoMode->height << 
+                ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
+                ",refreshRate:" << videoMode->refreshRate;
+  GLFWwindow* w = glfwCreateWindow( videoMode->width, videoMode->height, title, monitor, NULL );
+  gl_log( ss.str().c_str() );
+
   if( !w ) {
     glfwTerminate();
     abort( "Could not open window with GLFW3" );

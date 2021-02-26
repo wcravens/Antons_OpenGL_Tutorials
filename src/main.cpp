@@ -1,8 +1,14 @@
 #include <iostream>
+#include <fstream>
+#include <time.h>
+#include <stdarg.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#define GL_LOG_FILE "ogltut_gl.log"
+
+// TODO: Convert to #define's
 const int WINDOW_WIDTH=1200;
 const int WINDOW_HEIGHT=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
@@ -52,6 +58,31 @@ void quit( const std::string message ){
   log( "QUIT::" + message );
 }
 
+bool restart_gl_log(){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
+
+  // We may also be able to use __DATE__ and __TIME__ with `gcc`.
+  time_t now = time( NULL );
+  char* date = ctime( &now );
+  ofs << "GL_LOG_FILE log. local time "<< date << std::endl;
+  ofs.close();
+  return true;
+}
+
+bool gl_log( const char* message ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
+  if( ! ofs.is_open() ){
+    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    return false;
+  }
+  ofs << message << std::endl;
+  ofs.close();
+  return true;
+}
 
 
 void init_gl(){

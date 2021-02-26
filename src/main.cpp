@@ -3,13 +3,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-void log( const std::string message );
-void log_error( const std::string message );
-void abort();
-void abort( const std::string message );
-void quit();
-void quit( const std::string message );
-
 const int WINDOW_WIDTH=1200;
 const int WINDOW_HEIGHT=1200;
 const char* WINDOW_TITLE="Antons OpenGL Tutorial";
@@ -34,6 +27,100 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
+
+void log( const std::string message ) {
+  std::cout << "LOG::" << message << "." << std::endl;
+}
+
+void log_error( const std::string message ){
+  std::cerr << "ERROR::" << message << "!" << std::endl;
+}
+
+void abort(){
+  exit( EXIT_FAILURE );
+}
+
+void abort( const std::string message ){
+  log_error( "ABORT::" + message );
+};
+
+void quit(){
+  exit( EXIT_SUCCESS );
+};
+
+void quit( const std::string message ){
+  log( "QUIT::" + message );
+}
+
+
+
+void init_gl(){
+  glEnable( GL_DEPTH_TEST );
+  glDepthFunc( GL_LESS );
+}
+
+void init_glew(){
+  glewExperimental = GL_TRUE;
+  glewInit();
+  if (glewInit() != GLEW_OK)
+      abort( "Failed to initialize GLEW");
+}
+
+void init_glfw() {
+  if( !glfwInit() ) abort( "Could not start GLFW3" );
+}
+
+void log_gl_version_info(){
+  const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
+  log( "Renderer: " + std::string( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) ) );
+  log( "OpenGL Version support: " + version );
+}
+
+void process_input( GLFWwindow* window ) {
+  // escape
+  if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+}
+
+
+void terminate_window(){
+  glfwTerminate();
+  quit();
+}
+
+GLuint init_shader_program(){
+  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
+  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
+  glCompileShader( vertexShaderId );
+
+  GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
+  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
+  glCompileShader( fragmentShaderId );
+
+  GLuint shaderProgramId = glCreateProgram();
+  glAttachShader( shaderProgramId, vertexShaderId );
+  glAttachShader( shaderProgramId, fragmentShaderId );
+  glLinkProgram( shaderProgramId );
+
+  return shaderProgramId;
+}
+
+GLuint init_triangle_vao( const GLfloat* data ) {
+  GLuint vboId;
+  glGenBuffers(1, &vboId );
+  glBindBuffer( GL_ARRAY_BUFFER, vboId );
+  glBufferData( GL_ARRAY_BUFFER, 9 * sizeof( GLfloat ), data, GL_STATIC_DRAW );
+
+  GLuint vaoId;
+  glGenVertexArrays( 1, &vaoId );
+  glBindVertexArray( vaoId );
+  glEnableVertexAttribArray( 0 );
+  glBindBuffer( GL_ARRAY_BUFFER, vboId );
+  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, NULL );
+
+  return vboId;
+}
+
 GLFWwindow* init_window( int width, int height, const char* title ){
   #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -48,31 +135,6 @@ GLFWwindow* init_window( int width, int height, const char* title ){
   }
   glfwMakeContextCurrent( w );
   return w;
-}
-
-void init_glew(){
-  glewExperimental = GL_TRUE;
-  glewInit();
-  if (glewInit() != GLEW_OK)
-      abort( "Failed to initialize GLEW");
-}
-
-void log_gl_version_info();
-void init_gl();
-void terminate_window();
-
-GLuint init_triangle_vao( const GLfloat* data ); 
-GLuint init_shader_program();
-
-void init_glfw() {
-  if( !glfwInit() ) abort( "Could not start GLFW3" );
-}
-
-
-void process_input( GLFWwindow* window ) {
-  // escape
-  if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
 }
 
 void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
@@ -103,77 +165,3 @@ int main() {
   terminate_window();
 }
 
-void log( const std::string message ) {
-  std::cout << "LOG::" << message << "." << std::endl;
-}
-
-void log_error( const std::string message ){
-  std::cerr << "ERROR::" << message << "!" << std::endl;
-}
-
-void abort(){
-  exit( EXIT_FAILURE );
-}
-
-void abort( const std::string message ){
-  log_error( "ABORT::" + message );
-};
-
-void quit(){
-  exit( EXIT_SUCCESS );
-};
-
-void quit( const std::string message ){
-  log( "QUIT::" + message );
-}
-
-
-void log_gl_version_info(){
-  const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
-  log( "Renderer: " + std::string( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) ) );
-  log( "OpenGL Version support: " + version );
-}
-
-void init_gl(){
-  glEnable( GL_DEPTH_TEST );
-  glDepthFunc( GL_LESS );
-}
-
-
-void terminate_window(){
-  glfwTerminate();
-  quit();
-}
-
-GLuint init_triangle_vao( const GLfloat* data ) {
-  GLuint vboId;
-  glGenBuffers(1, &vboId );
-  glBindBuffer( GL_ARRAY_BUFFER, vboId );
-  glBufferData( GL_ARRAY_BUFFER, 9 * sizeof( GLfloat ), data, GL_STATIC_DRAW );
-
-  GLuint vaoId;
-  glGenVertexArrays( 1, &vaoId );
-  glBindVertexArray( vaoId );
-  glEnableVertexAttribArray( 0 );
-  glBindBuffer( GL_ARRAY_BUFFER, vboId );
-  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, NULL );
-
-  return vboId;
-}
-
-GLuint init_shader_program(){
-  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
-  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
-  glCompileShader( vertexShaderId );
-
-  GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
-  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
-  glCompileShader( fragmentShaderId );
-
-  GLuint shaderProgramId = glCreateProgram();
-  glAttachShader( shaderProgramId, vertexShaderId );
-  glAttachShader( shaderProgramId, fragmentShaderId );
-  glLinkProgram( shaderProgramId );
-
-  return shaderProgramId;
-}

@@ -10,6 +10,7 @@ Window Resolution, Monitor Selection and Full-Screen Mode.
 
 Window resizeing callback.
 
+Printing Parameters from the GL Context
 
 
 

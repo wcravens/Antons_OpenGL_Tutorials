@@ -39,11 +39,11 @@ int g_gl_width = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
 
 void log( const std::string message ) {
-  std::cout << "LOG::" << message << "." << std::endl;
+  std::cout << "LOG::" << message << ".";
 }
 
 void log_error( const std::string message ){
-  std::cerr << "ERROR::" << message << "!" << std::endl;
+  std::cerr << "ERROR::" << message << "!";
 }
 
 void abort(){
@@ -98,6 +98,65 @@ bool gl_log_error( const char* message ){
   ofs << "ERROR::" << message << std::endl;
   ofs.close();
   return true;
+}
+
+void gl_log_params() {
+  GLenum params[] = {
+    GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+    GL_MAX_CUBE_MAP_TEXTURE_SIZE,
+    GL_MAX_DRAW_BUFFERS,
+    GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,
+    GL_MAX_TEXTURE_IMAGE_UNITS,
+    GL_MAX_TEXTURE_SIZE,
+    GL_MAX_VARYING_FLOATS,
+    GL_MAX_VERTEX_ATTRIBS,
+    GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+    GL_MAX_VERTEX_UNIFORM_COMPONENTS,
+    GL_MAX_VIEWPORT_DIMS,
+    GL_STEREO,
+  };
+  const char* names[] = {
+    "GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_CUBE_MAP_TEXTURE_SIZE",
+    "GL_MAX_DRAW_BUFFERS",
+    "GL_MAX_FRAGMENT_UNIFORM_COMPONENTS",
+    "GL_MAX_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_TEXTURE_SIZE",
+    "GL_MAX_VARYING_FLOATS",
+    "GL_MAX_VERTEX_ATTRIBS",
+    "GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS",
+    "GL_MAX_VERTEX_UNIFORM_COMPONENTS",
+    "GL_MAX_VIEWPORT_DIMS",
+    "GL_STEREO",
+  };
+  std::stringstream ss;
+  gl_log("GL Context Params:\n");
+  gl_log("-----------------------------\n");
+  char msg[256];
+  // integers - only works if the order is 0-10 integer return types
+  for (int i = 0; i < 10; i++) {
+    int v = 0;
+    glGetIntegerv(params[i], &v);
+    ss << names[i] << ": " << v;
+    gl_log( ss.str().c_str() );
+    ss.clear();
+    ss.str("");
+  }
+  // others
+  int v[2];
+  v[0] = v[1] = 0;
+  glGetIntegerv(params[10], v);
+  ss << names[10] << ": " << v[0] << " " << v[1];
+  gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
+  unsigned char s = 0;
+  glGetBooleanv(params[11], &s);
+  ss << names[11] << ": " << (unsigned int)s;
+  gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
+  gl_log("-----------------------------\n");
 }
 
 void glfw_error_callback( int error, const char* description ){
@@ -187,6 +246,8 @@ GLuint init_triangle_vao( const GLfloat* data ) {
 }
 
 GLFWwindow* init_window( int width, int height, const char* title ){
+  std::stringstream ss;
+
   #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -197,21 +258,25 @@ GLFWwindow* init_window( int width, int height, const char* title ){
 
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
-  std::stringstream ss;
+  g_gl_width = videoMode->width;
+  g_gl_height = videoMode->height;
   ss << "width:" << videoMode->width << ",height:" << videoMode->height << 
                 ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
                 ",refreshRate:" << videoMode->refreshRate;
-  g_gl_width = videoMode->width;
-  g_gl_height = videoMode->height;
-  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, title, monitor, NULL );
-  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
   gl_log( ss.str().c_str() );
+  ss.clear();
+  ss.str("");
 
+  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, title, monitor, NULL );
   if( !w ) {
     glfwTerminate();
-    abort( "Could not open window with GLFW3" );
+    const char* msg = "Could not open window with GLFW3.";
+    gl_log_error( msg );
+    abort( msg );
   }
+  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
   glfwMakeContextCurrent( w );
+  gl_log_params();
   return w;
 }
 

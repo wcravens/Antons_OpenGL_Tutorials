@@ -10,10 +10,10 @@
 
 #define GL_LOG_FILE "ogltut_gl.log"
 
-// TODO: Convert to #define's
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 1200
-#define WINDOW_TITLE "Antons OpenGL Tutorial"
+#define WINDOW_WIDTH        1200
+#define WINDOW_HEIGHT       1200
+#define WINDOW_TITLE        "Antons OpenGL Tutorial"
+#define WINDOW_FULL_SCREEN  0
 
 const GLfloat triangleVerts[] = {
    0.25f,  0.75/2.0,  0.0f, // top
@@ -35,7 +35,7 @@ const char* fragment_shader =
 "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
 "}";
 
-int g_gl_width = WINDOW_WIDTH;
+int g_gl_width  = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
 
 void log( const std::string message ) {
@@ -83,7 +83,7 @@ bool gl_log( const char* message ){
     std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
     return false;
   }
-  ofs << "INFO::" << message << std::endl;
+  ofs << "INFO::GL_LOG::" << message << std::endl;
   ofs.close();
   return true;
 }
@@ -130,8 +130,8 @@ void gl_log_params() {
     "GL_STEREO",
   };
   std::stringstream ss;
-  gl_log("GL Context Params:\n");
-  gl_log("-----------------------------\n");
+  gl_log("GL Context Params:");
+  gl_log("-----------------------------");
   char msg[256];
   // integers - only works if the order is 0-10 integer return types
   for (int i = 0; i < 10; i++) {
@@ -165,7 +165,7 @@ void glfw_error_callback( int error, const char* description ){
 }
 
 void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
-  g_gl_width = width;
+  g_gl_width  = width;
   g_gl_height = height;
   /* Update perspective matrices here */
 }
@@ -245,7 +245,7 @@ GLuint init_triangle_vao( const GLfloat* data ) {
   return vboId;
 }
 
-GLFWwindow* init_window( int width, int height, const char* title ){
+GLFWwindow* init_window(){
   std::stringstream ss;
 
   #ifdef __APPLE__
@@ -258,36 +258,71 @@ GLFWwindow* init_window( int width, int height, const char* title ){
 
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
-  g_gl_width = videoMode->width;
-  g_gl_height = videoMode->height;
-  ss << "width:" << videoMode->width << ",height:" << videoMode->height << 
+  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height << 
                 ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
                 ",refreshRate:" << videoMode->refreshRate;
   gl_log( ss.str().c_str() );
   ss.clear();
   ss.str("");
 
-  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, title, monitor, NULL );
+  if( WINDOW_FULL_SCREEN ){
+    g_gl_width  = videoMode->width;
+    g_gl_height = videoMode->height;
+    char tmp[128];
+    sprintf( tmp, "INIT_WINDOW::Full screen window. width: %d, height: %d.", g_gl_width, g_gl_height );
+    gl_log( tmp );
+  }
+  char tmp[128];
+  sprintf( tmp, "INIT_WINDOW::width: %d, height: %d, title: %s.", g_gl_width, g_gl_height, WINDOW_TITLE );
+  gl_log( tmp ); 
+
+  GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
     glfwTerminate();
-    const char* msg = "Could not open window with GLFW3.";
+    const char* msg = "INIT_WINDOW::Could not open window with GLFW3.";
     gl_log_error( msg );
     abort( msg );
   }
-  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
   glfwMakeContextCurrent( w );
+  glfwSetWindowSizeCallback( w, glfw_window_size_callback );
   gl_log_params();
   return w;
 }
 
+#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
+void _update_fps_counter( GLFWwindow* window ){
+  static double previous_seconds = glfwGetTime();
+  static int frame_count;
+  double current_seconds = glfwGetTime();
+  double elapsed_seconds = current_seconds - previous_seconds;
+  if( elapsed_seconds > WINDOW_TITLE_FPS_DEBOUNCE ) {
+    previous_seconds = current_seconds; 
+    double fps = (double)frame_count / elapsed_seconds;
+    char tmp[128];
+    sprintf( tmp, "WINDOW_TITLE : drawing @ %.2f fps", fps );
+    glfwSetWindowTitle( window, tmp );
+    frame_count = 0;
+  }
+  frame_count++;
+}
+
 void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
   while( !glfwWindowShouldClose( window ) ){
+    _update_fps_counter( window );
+    // New buffer state
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glViewport( 0, 0, g_gl_width, g_gl_height );
+
+    // Drawing
     glUseProgram( shaderId );
     glBindVertexArray( vaoId );
     glDrawArrays( GL_TRIANGLES, 0, 3 );
-    glfwPollEvents();
+
+    // Buffer
     glfwSwapBuffers( window );
+
+    // Intermittent Events
+    glfwPollEvents();
     process_input( window );
   }
 }
@@ -296,7 +331,7 @@ int main() {
   assert( restart_gl_log() );
   init_glfw();
 
-  GLFWwindow* window = init_window( g_gl_width, g_gl_height, WINDOW_TITLE );
+  GLFWwindow* window = init_window();
   init_glew();
   log_gl_version_info();
   init_gl();

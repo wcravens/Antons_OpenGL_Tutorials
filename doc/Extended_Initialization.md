@@ -31,3 +31,10 @@ the GL Paramereter logging that has been impemented. It's superflous to
 routinely log many of these, but it's worth remembering this   when
 debugging more awkward situation.
 
+Frame Rate Counter
+
+There are really good notes in the main text about early optimization
+and the potential insignificance of the reported frame rate until your
+application has noticible efficientcy issues.
+
+

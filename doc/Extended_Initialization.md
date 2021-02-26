@@ -2,4 +2,6 @@
 
 Starting a log file.
 
+Setting a Minimmum OpenGL Version to Use
+
 

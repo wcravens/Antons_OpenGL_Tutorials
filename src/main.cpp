@@ -120,7 +120,11 @@ void init_glfw() {
   msg.append( glfwGetVersionString() );
   gl_log( msg.c_str() );
   glfwSetErrorCallback( glfw_error_callback );
-  if( !glfwInit() ) abort( "Could not start GLFW3" );
+  if( !glfwInit() ){
+    const char* msg = "Could not start glfw.";
+    gl_log_error( msg );
+    abort( "Could not start GLFW3" );
+  }
 }
 
 void log_gl_version_info(){

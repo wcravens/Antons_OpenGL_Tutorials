@@ -5,6 +5,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
 
 set(CMAKE_CXX_STANDARD 17)
 
+file( GLOB GLSL_VERTEX_SHADER_FILES "src/*.vert" )
+file( GLOB GLSL_FRAGMENT_SHADER_FILES "src/*.frag" )
+
+file( COPY ${GLSL_VERTEX_SHADER_FILES} DESTINATION shaders )
+message( "Copying ${GLSL_VERTEX_SHADER_FILES}" )
+file( COPY ${GLSL_FRAGMENT_SHADER_FILES} DESTINATION shaders )
+message( "Copying ${GLSL_FRAGMENT_SHADER_FILES}" )
+
 add_executable( ogltut src/main.cpp )
 
 include_directories( "include" )

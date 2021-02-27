@@ -15,25 +15,14 @@
 #define WINDOW_TITLE        "Antons OpenGL Tutorial"
 #define WINDOW_FULL_SCREEN  0
 
+#define GENERIC_VERTEX_SHADER_FILE "shaders/generic.vert"
+#define GENERIC_FRAGMENT_SHADER_FILE "shaders/generic.frag"
+
 const GLfloat triangleVerts[] = {
    0.25f,  0.75/2.0,  0.0f, // top
    0.5f,  0.0f,  0.0f, // lower right
    0.0f,  0.0f,  0.0f  // lower left
 };
-
-const char* vertex_shader =
-"#version 400\n"
-"in vec3 vertexCoord;"
-"void main() {"
-"  gl_Position = vec4(vertexCoord, 1.0);"
-"}";
-
-const char* fragment_shader =
-"#version 400\n"
-"out vec4 frag_colour;"
-"void main() {"
-"  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
-"}";
 
 int g_gl_width  = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
@@ -212,13 +201,30 @@ void terminate_window(){
   quit();
 }
 
+const char* read_text_from_file( const char* filepath ) {
+  std::ifstream ifs( filepath, std::ifstream::binary );
+  if( !ifs ){
+    char msg[128];
+    sprintf( msg, "READ_FILE::Failed to open %s!", filepath );
+    gl_log_error( msg );
+    abort();
+  }
+  std::ostringstream sstr;
+  sstr << ifs.rdbuf();
+  return sstr.str().c_str();
+}
+
 GLuint init_shader_program(){
+
+  const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ); 
+  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE ); 
+
   GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
-  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
+  glShaderSource( vertexShaderId, 1, &vertex_shader_code, NULL );
   glCompileShader( vertexShaderId );
 
   GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
-  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
+  glShaderSource( fragmentShaderId, 1, &fragment_shader_code, NULL );
   glCompileShader( fragmentShaderId );
 
   GLuint shaderProgramId = glCreateProgram();

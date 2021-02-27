@@ -27,66 +27,41 @@ const GLfloat triangleVerts[] = {
 int g_gl_width  = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
 
-void log( const std::string message ) {
-  std::cout << "LOG::" << message << ".";
-}
-
-void log_error( const std::string message ){
-  std::cerr << "ERROR::" << message << "!";
-}
-
-void abort(){
-  exit( EXIT_FAILURE );
-}
-
-void abort( const std::string message ){
-  log_error( "ABORT::" + message );
-};
-
-void quit(){
-  exit( EXIT_SUCCESS );
-};
-
-void quit( const std::string message ){
-  log( "QUIT::" + message );
-}
-
-bool restart_gl_log(){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::trunc );
+bool _gl_log_to_file( std::string msg ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
   if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
     return false;
   }
+  ofs <<  msg << std::endl;
+  ofs.close();
+  return true;
+}
 
-  // We may also be able to use __DATE__ and __TIME__ with `gcc`.
+bool gl_log( std::string msg ){
+  std::string prefix( "INFO::" );
+  return _gl_log_to_file( prefix + msg );
+}
+
+bool gl_log_error( std::string msg ){
+  std::string prefix( "ERROR::" );
+  std::cerr << prefix+msg << std::endl;
+  return _gl_log_to_file( prefix + msg );
+}
+
+bool gl_log_restart(){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::trunc );
+  if( !ofs.is_open() ){
+    std::cerr << "ERROR:: Could not start new log file " << GL_LOG_FILE << "!";
+    return false;
+  }
+  // We may also be able to use __DATE__ and __TIME__ with `gcc` to report build version.
   time_t now = time( NULL );
-  char* date = ctime( &now );
-  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date;
+  std::string date = ctime( &now );
+  ofs <<  "*****RESTART***** " << date;
   ofs.close();
   return true;
-}
 
-bool gl_log( const char* message ){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
-  if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
-    return false;
-  }
-  ofs << "INFO::GL_LOG::" << message << std::endl;
-  ofs.close();
-  return true;
-}
-
-bool gl_log_error( const char* message ){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
-  if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
-    return false;
-  }
-  std::cerr << "ERROR::" << message << std::endl;
-  ofs << "ERROR::" << message << std::endl;
-  ofs.close();
-  return true;
 }
 
 void gl_log_params() {
@@ -118,34 +93,45 @@ void gl_log_params() {
     "GL_MAX_VIEWPORT_DIMS",
     "GL_STEREO",
   };
-  std::stringstream ss;
+
   gl_log("GL Context Params:");
   gl_log("-----------------------------");
-  char msg[256];
-  // integers - only works if the order is 0-10 integer return types
-  for (int i = 0; i < 10; i++) {
+
+  // integers - only works if params 0-9 are integer return types
+  for (int i = 0; i <= 9; i++) {
     int v = 0;
     glGetIntegerv(params[i], &v);
-    ss << names[i] << ": " << v;
-    gl_log( ss.str().c_str() );
-    ss.clear();
-    ss.str("");
+
+    std::string msg;
+    msg += names[i] + std::string(": ") + std::to_string( v ) ;
+    gl_log( msg );
   }
   // others
-  int v[2];
-  v[0] = v[1] = 0;
+  int v[2] = {0};
   glGetIntegerv(params[10], v);
-  ss << names[10] << ": " << v[0] << " " << v[1];
-  gl_log( ss.str().c_str() );
-  ss.clear();
-  ss.str("");
+  std::string msg;
+  msg += names[10] + std::string(":") + std::to_string( v[0] ) + "," + std::to_string( v[1] );
+  gl_log( msg );
+
   unsigned char s = 0;
   glGetBooleanv(params[11], &s);
-  ss << names[11] << ": " << (unsigned int)s;
-  gl_log( ss.str().c_str() );
-  ss.clear();
-  ss.str("");
-  gl_log("-----------------------------\n");
+  msg = "";
+  msg += names[11] + std::string(":") + std::to_string( s );
+  gl_log( msg );
+  gl_log("-----------------------------");
+}
+
+void abort(){
+  gl_log_error( "ABORT!!!" );
+  exit( EXIT_FAILURE );
+};
+
+void quit(){
+  exit( EXIT_SUCCESS );
+};
+
+void quit( const std::string message ){
+  gl_log( "QUIT::" + message );
 }
 
 void glfw_error_callback( int error, const char* description ){
@@ -167,26 +153,28 @@ void init_gl(){
 void init_glew(){
   glewExperimental = GL_TRUE;
   glewInit();
-  if (glewInit() != GLEW_OK)
-      abort( "Failed to initialize GLEW");
+  if (glewInit() != GLEW_OK) {
+      gl_log_error( "INIT_GLEW::Failed to initialize GLEW!" );
+      abort();
+  }
 }
 
 void init_glfw() {
-  std::string msg( "GLFW::STARTING::" );
-  msg.append( glfwGetVersionString() );
-  gl_log( msg.c_str() );
+  gl_log( std::string("IT_GLFW::Starting ") + glfwGetVersionString() );
+
   glfwSetErrorCallback( glfw_error_callback );
   if( !glfwInit() ){
-    const char* msg = "Could not start glfw.";
-    gl_log_error( msg );
-    abort( "Could not start GLFW3" );
+    gl_log_error( "INIT_GLFW::Could not start glfw!" );
+    abort();
   }
 }
 
 void log_gl_version_info(){
+  const std::string renderer( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) );
+  gl_log( std::string("Renderer: ")               + renderer ); 
+
   const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
-  log( "Renderer: " + std::string( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) ) );
-  log( "OpenGL Version support: " + version );
+  gl_log( std::string("OpenGL Version support: ") + version ); 
 }
 
 void process_input( GLFWwindow* window ) {
@@ -204,9 +192,7 @@ void terminate_window(){
 const char* read_text_from_file( const char* filepath ) {
   std::ifstream ifs( filepath, std::ifstream::binary );
   if( !ifs ){
-    char msg[128];
-    sprintf( msg, "READ_FILE::Failed to open %s!", filepath );
-    gl_log_error( msg );
+    gl_log_error( std::string( "READ_FILE::Failed to open ") + filepath + std::string("!") );
     abort();
   }
   std::ostringstream sstr;
@@ -285,9 +271,8 @@ GLFWwindow* init_window(){
   GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
     glfwTerminate();
-    const char* msg = "INIT_WINDOW::Could not open window with GLFW3.";
-    gl_log_error( msg );
-    abort( msg );
+    gl_log_error( "INIT_WINDOW::Could not open window with GLFW3!" );
+    abort();
   }
   glfwMakeContextCurrent( w );
   glfwSetWindowSizeCallback( w, glfw_window_size_callback );

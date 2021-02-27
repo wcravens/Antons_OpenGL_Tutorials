@@ -333,14 +333,19 @@ void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
   }
 }
 
-int main() {
-  assert( restart_gl_log() );
+GLFWwindow* setup() {
   init_glfw();
-
-  GLFWwindow* window = init_window();
+  GLFWwindow* w = init_window();
   init_glew();
-  log_gl_version_info();
   init_gl();
+  log_gl_version_info();
+  return w;
+}
+
+int main() {
+  assert( gl_log_restart() );
+
+  GLFWwindow* window = setup();
 
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   GLuint shaderProgramId = init_shader_program();

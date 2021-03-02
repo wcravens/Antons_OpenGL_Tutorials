@@ -172,14 +172,14 @@ void init_glfw() {
 
 void log_gl_version_info(){
   const std::string renderer( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) );
-  gl_log( std::string("Renderer: ")               + renderer ); 
+  gl_log( std::string("Renderer: ")               + renderer );
 
   const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
-  gl_log( std::string("OpenGL Version support: ") + version ); 
+  gl_log( std::string("OpenGL Version support: ") + version );
 }
 
 void process_input( GLFWwindow* window ) {
-  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html 
+  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 }
@@ -204,8 +204,8 @@ std::string read_text_from_file( const char* filepath ) {
 
 GLuint init_shader_program(){
 
-  const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ); 
-  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE ); 
+  const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ).c_str();
+  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE ).c_str();
 
   GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
   glShaderSource( vertexShaderId, 1, &vertex_shader_code, NULL );
@@ -261,7 +261,7 @@ GLFWwindow* init_window(){
 
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
-  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height << 
+  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height <<
                 ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
                 ",refreshRate:" << videoMode->refreshRate;
   gl_log( ss.str().c_str() );
@@ -277,7 +277,7 @@ GLFWwindow* init_window(){
   }
   char tmp[128];
   sprintf( tmp, "INIT_WINDOW::width: %d, height: %d, title: %s.", g_gl_width, g_gl_height, WINDOW_TITLE );
-  gl_log( tmp ); 
+  gl_log( tmp );
 
   GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
@@ -342,9 +342,9 @@ int main() {
 
   GLFWwindow* window = setup();
 
-  GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   GLuint shaderProgramId = init_shader_program();
 
+  GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   glViewport( 0, 0, g_gl_width, g_gl_height );
 
   render_loop( window, shaderProgramId, triangleVaoId );

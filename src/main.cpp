@@ -142,6 +142,7 @@ void glfw_error_callback( int error, const char* description ){
 void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
   g_gl_width  = width;
   g_gl_height = height;
+  glViewport( 0, 0, g_gl_width, g_gl_height );
   /* Update perspective matrices here */
 }
 
@@ -343,6 +344,8 @@ int main() {
 
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
   GLuint shaderProgramId = init_shader_program();
+
+  glViewport( 0, 0, g_gl_width, g_gl_height );
 
   render_loop( window, shaderProgramId, triangleVaoId );
 

@@ -191,7 +191,7 @@ void terminate_window(){
 }
 
 std::string read_text_from_file( const char* filepath ) {
-  gl_log( "Reading file " + std::string( filepath ) );
+  gl_log( "READING::FILE::" + std::string( filepath ) );
   std::ifstream ifs( filepath, std::ifstream::binary );
   if( !ifs ){
     gl_log_error( std::string( "READ_FILE::Failed to open ") + filepath + std::string("!") );
@@ -203,7 +203,7 @@ std::string read_text_from_file( const char* filepath ) {
 }
 
 GLuint init_shader_program(){
-
+  gl_log( "INIT_SHADER_PROGRAM::..." );
   const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ).c_str();
   const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE ).c_str();
 
@@ -222,10 +222,9 @@ GLuint init_shader_program(){
 
   int params = -1;
   glGetProgramiv( shaderProgramId, GL_ACTIVE_UNIFORMS, &params );
-  gl_log( std::to_string( params ) );
 
   GLint uniformLoc = glGetUniformLocation( shaderProgramId, "inputColor" );
-  gl_log( "UNIFORM_LOCATION::inputColor::" + uniformLoc );
+  gl_log( "INIT_SHADER_PROGRAM::UNIFORM_LOCATION::inputColor::" + std::to_string( uniformLoc ) );
   glUseProgram( shaderProgramId );
   glUniform4f( uniformLoc, 0.5, 0.0, 0.5, 1.0 );
 

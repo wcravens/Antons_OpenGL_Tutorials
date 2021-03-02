@@ -14,6 +14,7 @@
 #define WINDOW_HEIGHT       1200
 #define WINDOW_TITLE        "Antons OpenGL Tutorial"
 #define WINDOW_FULL_SCREEN  0
+#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
 
 #define GENERIC_VERTEX_SHADER_FILE "shaders/generic.vert"
 #define GENERIC_FRAGMENT_SHADER_FILE "shaders/generic.frag"
@@ -202,6 +203,8 @@ std::string read_text_from_file( const char* filepath ) {
   return sstr.str();
 }
 
+
+
 GLuint init_shader_program(){
   gl_log( "INIT_SHADER_PROGRAM::..." );
   const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ).c_str();
@@ -286,7 +289,6 @@ GLFWwindow* init_window(){
   return w;
 }
 
-#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
 void _update_fps_counter( GLFWwindow* window ){
   static double previous_seconds = glfwGetTime();
   static int frame_count;

@@ -222,4 +222,4 @@ was set active by the `glUseProgram( id )` function.
 `GL_ACTIVE_ATTRIBUTES`, `GL_ACTIVE_ATTRIBUTE_MAX_LENGTH`,
 `GL_ACTIVE_UNIFORMS`, and `GL_ACTIVE_UNIFORM_MAX_LENGTH`.
 
-(3)`glGetProgram` with `GL_ACTIVE_ATTRIBUTES` will give you a list of active attributes.
+(3)`glGetProgramiv` with `GL_ACTIVE_ATTRIBUTES` will give you a list of active attributes.

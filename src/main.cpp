@@ -136,7 +136,7 @@ void quit( const std::string message ){
 
 void glfw_error_callback( int error, const char* description ){
   std::string msg( "GLFW::" + std::to_string( error ) + "::" + description );
-  gl_log_error( msg.c_str() ); 
+  gl_log_error( msg.c_str() );
 }
 
 void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
@@ -189,7 +189,8 @@ void terminate_window(){
   quit();
 }
 
-const char* read_text_from_file( const char* filepath ) {
+std::string read_text_from_file( const char* filepath ) {
+  gl_log( "Reading file " + std::string( filepath ) );
   std::ifstream ifs( filepath, std::ifstream::binary );
   if( !ifs ){
     gl_log_error( std::string( "READ_FILE::Failed to open ") + filepath + std::string("!") );
@@ -197,7 +198,7 @@ const char* read_text_from_file( const char* filepath ) {
   }
   std::ostringstream sstr;
   sstr << ifs.rdbuf();
-  return sstr.str().c_str();
+  return sstr.str();
 }
 
 GLuint init_shader_program(){
@@ -217,6 +218,15 @@ GLuint init_shader_program(){
   glAttachShader( shaderProgramId, vertexShaderId );
   glAttachShader( shaderProgramId, fragmentShaderId );
   glLinkProgram( shaderProgramId );
+
+  int params = -1;
+  glGetProgramiv( shaderProgramId, GL_ACTIVE_UNIFORMS, &params );
+  gl_log( std::to_string( params ) );
+
+  GLint uniformLoc = glGetUniformLocation( shaderProgramId, "inputColor" );
+  gl_log( "UNIFORM_LOCATION::inputColor::" + uniformLoc );
+  glUseProgram( shaderProgramId );
+  glUniform4f( uniformLoc, 0.5, 0.0, 0.5, 1.0 );
 
   return shaderProgramId;
 }
@@ -287,7 +297,7 @@ void _update_fps_counter( GLFWwindow* window ){
   double current_seconds = glfwGetTime();
   double elapsed_seconds = current_seconds - previous_seconds;
   if( elapsed_seconds > WINDOW_TITLE_FPS_DEBOUNCE ) {
-    previous_seconds = current_seconds; 
+    previous_seconds = current_seconds;
     double fps = (double)frame_count / elapsed_seconds;
     char tmp[128];
     sprintf( tmp, "WINDOW_TITLE : drawing @ %.2f fps", fps );
@@ -297,15 +307,14 @@ void _update_fps_counter( GLFWwindow* window ){
   frame_count++;
 }
 
-void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
+void render_loop( GLFWwindow* window, GLuint gpuProgramId, GLuint vaoId ) {
   while( !glfwWindowShouldClose( window ) ){
     _update_fps_counter( window );
     // New buffer state
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glViewport( 0, 0, g_gl_width, g_gl_height );
 
     // Drawing
-    glUseProgram( shaderId );
+    glUseProgram( gpuProgramId );
     glBindVertexArray( vaoId );
     glDrawArrays( GL_TRIANGLES, 0, 3 );
 

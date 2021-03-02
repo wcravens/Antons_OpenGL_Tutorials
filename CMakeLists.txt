@@ -5,15 +5,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
 
 set(CMAKE_CXX_STANDARD 17)
 
-file( GLOB GLSL_VERTEX_SHADER_FILES "src/*.vert" )
-file( GLOB GLSL_FRAGMENT_SHADER_FILES "src/*.frag" )
-
-file( COPY ${GLSL_VERTEX_SHADER_FILES} DESTINATION shaders )
-message( "Copying ${GLSL_VERTEX_SHADER_FILES}" )
-file( COPY ${GLSL_FRAGMENT_SHADER_FILES} DESTINATION shaders )
-message( "Copying ${GLSL_FRAGMENT_SHADER_FILES}" )
-
 add_executable( ogltut src/main.cpp )
+
+message( ${CMAKE_CURRENT_BINARY_DIR} )
+message( ${CMAKE_CURRENT_SOURCE_DIR} )
+
+# https://stackoverflow.com/questions/36483801/cmake-softlink-resource-such-as-glsl-shaders-or-copy-each-complilation
+ADD_CUSTOM_TARGET(
+    copy_shader_files
+    ${CMAKE_COMMAND}
+    -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders
+    ${CMAKE_CURRENT_BINARY_DIR}/shaders
+    COMMENT "Copying shader files." VERBATIM 
+)
+ 
+add_dependencies( ogltut copy_shader_files )
 
 include_directories( "include" )
 

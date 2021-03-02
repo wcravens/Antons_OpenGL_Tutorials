@@ -261,9 +261,9 @@ GLFWwindow* init_window(){
 
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
-  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height <<
-                ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
-                ",refreshRate:" << videoMode->refreshRate;
+  ss << "VIDEO_MODE::width:" << videoMode->width << ", height:" << videoMode->height <<
+                ", redBits:" << videoMode->redBits << ", blueBits:" << videoMode->blueBits << ", greenBits:" << videoMode->greenBits <<
+                ", refreshRate:" << videoMode->refreshRate;
   gl_log( ss.str().c_str() );
   ss.clear();
   ss.str("");
@@ -271,13 +271,9 @@ GLFWwindow* init_window(){
   if( WINDOW_FULL_SCREEN ){
     g_gl_width  = videoMode->width;
     g_gl_height = videoMode->height;
-    char tmp[128];
-    sprintf( tmp, "INIT_WINDOW::Full screen window. width: %d, height: %d.", g_gl_width, g_gl_height );
-    gl_log( tmp );
+    gl_log( "INIT_WINDOW::FULL_SCREEN:: width: " + std::to_string( g_gl_width ) + ",height: " + std::to_string( g_gl_height ) );
   }
-  char tmp[128];
-  sprintf( tmp, "INIT_WINDOW::width: %d, height: %d, title: %s.", g_gl_width, g_gl_height, WINDOW_TITLE );
-  gl_log( tmp );
+  gl_log( "INIT_WINDOW:: width: " + std::to_string( g_gl_width ) + ", height: " + std::to_string( g_gl_height ) );
 
   GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {

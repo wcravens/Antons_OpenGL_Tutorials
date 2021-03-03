@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstring>
+#include <string>
 #include <assert.h>
 #include <time.h>
 #include <stdarg.h>
@@ -14,6 +16,10 @@
 #define WINDOW_HEIGHT       1200
 #define WINDOW_TITLE        "Antons OpenGL Tutorial"
 #define WINDOW_FULL_SCREEN  0
+#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
+
+#define GENERIC_VERTEX_SHADER_FILE "shaders/generic.vert"
+#define GENERIC_FRAGMENT_SHADER_FILE "shaders/generic.frag"
 
 const GLfloat triangleVerts[] = {
    0.25f,  0.75/2.0,  0.0f, // top
@@ -21,83 +27,65 @@ const GLfloat triangleVerts[] = {
    0.0f,  0.0f,  0.0f  // lower left
 };
 
-const char* vertex_shader =
-"#version 400\n"
-"in vec3 vertexCoord;"
-"void main() {"
-"  gl_Position = vec4(vertexCoord, 1.0);"
-"}";
-
-const char* fragment_shader =
-"#version 400\n"
-"out vec4 frag_colour;"
-"void main() {"
-"  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
-"}";
-
 int g_gl_width  = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
 
-void log( const std::string message ) {
-  std::cout << "LOG::" << message << ".";
+const char* GL_type_to_string(GLenum type) {
+  switch(type) {
+    case GL_BOOL: return "bool";
+    case GL_INT: return "int";
+    case GL_FLOAT: return "float";
+    case GL_FLOAT_VEC2: return "vec2";
+    case GL_FLOAT_VEC3: return "vec3";
+    case GL_FLOAT_VEC4: return "vec4";
+    case GL_FLOAT_MAT2: return "mat2";
+    case GL_FLOAT_MAT3: return "mat3";
+    case GL_FLOAT_MAT4: return "mat4";
+    case GL_SAMPLER_2D: return "sampler2D";
+    case GL_SAMPLER_3D: return "sampler3D";
+    case GL_SAMPLER_CUBE: return "samplerCube";
+    case GL_SAMPLER_2D_SHADOW: return "sampler2DShadow";
+    default: break;
+  }
+  return "other";
 }
 
-void log_error( const std::string message ){
-  std::cerr << "ERROR::" << message << "!";
-}
 
-void abort(){
-  exit( EXIT_FAILURE );
-}
-
-void abort( const std::string message ){
-  log_error( "ABORT::" + message );
-};
-
-void quit(){
-  exit( EXIT_SUCCESS );
-};
-
-void quit( const std::string message ){
-  log( "QUIT::" + message );
-}
-
-bool restart_gl_log(){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::trunc );
+bool _gl_log_to_file( std::string msg ){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
   if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for writing: " << GL_LOG_FILE << std::endl;
+    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
     return false;
   }
+  ofs <<  msg << std::endl;
+  ofs.close();
+  return true;
+}
 
-  // We may also be able to use __DATE__ and __TIME__ with `gcc`.
+bool gl_log( std::string msg ){
+  std::string prefix( "INFO::" );
+  return _gl_log_to_file( prefix + msg );
+}
+
+bool gl_log_error( std::string msg ){
+  std::string prefix( "ERROR::" );
+  std::cerr << prefix+msg << std::endl;
+  return _gl_log_to_file( prefix + msg );
+}
+
+bool gl_log_restart(){
+  std::ofstream ofs( GL_LOG_FILE, std::ofstream::trunc );
+  if( !ofs.is_open() ){
+    std::cerr << "ERROR:: Could not start new log file " << GL_LOG_FILE << "!";
+    return false;
+  }
+  // We may also be able to use __DATE__ and __TIME__ with `gcc` to report build version.
   time_t now = time( NULL );
-  char* date = ctime( &now );
-  ofs << "INFO::GL_LOG_FILE::RESTART::"<< date;
+  std::string date = ctime( &now );
+  ofs <<  "*****RESTART***** " << date;
   ofs.close();
   return true;
-}
 
-bool gl_log( const char* message ){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
-  if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
-    return false;
-  }
-  ofs << "INFO::GL_LOG::" << message << std::endl;
-  ofs.close();
-  return true;
-}
-
-bool gl_log_error( const char* message ){
-  std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
-  if( ! ofs.is_open() ){
-    std::cerr << "ERROR: could not open GL_LOG_FILE for append: " << GL_LOG_FILE << std::endl;
-    return false;
-  }
-  std::cerr << "ERROR::" << message << std::endl;
-  ofs << "ERROR::" << message << std::endl;
-  ofs.close();
-  return true;
 }
 
 void gl_log_params() {
@@ -129,44 +117,56 @@ void gl_log_params() {
     "GL_MAX_VIEWPORT_DIMS",
     "GL_STEREO",
   };
-  std::stringstream ss;
+
   gl_log("GL Context Params:");
   gl_log("-----------------------------");
-  char msg[256];
-  // integers - only works if the order is 0-10 integer return types
-  for (int i = 0; i < 10; i++) {
+
+  // integers - only works if params 0-9 are integer return types
+  for (int i = 0; i <= 9; i++) {
     int v = 0;
     glGetIntegerv(params[i], &v);
-    ss << names[i] << ": " << v;
-    gl_log( ss.str().c_str() );
-    ss.clear();
-    ss.str("");
+
+    std::string msg;
+    msg += names[i] + std::string(": ") + std::to_string( v ) ;
+    gl_log( msg );
   }
   // others
-  int v[2];
-  v[0] = v[1] = 0;
+  int v[2] = {0};
   glGetIntegerv(params[10], v);
-  ss << names[10] << ": " << v[0] << " " << v[1];
-  gl_log( ss.str().c_str() );
-  ss.clear();
-  ss.str("");
+  std::string msg;
+  msg += names[10] + std::string(":") + std::to_string( v[0] ) + "," + std::to_string( v[1] );
+  gl_log( msg );
+
   unsigned char s = 0;
   glGetBooleanv(params[11], &s);
-  ss << names[11] << ": " << (unsigned int)s;
-  gl_log( ss.str().c_str() );
-  ss.clear();
-  ss.str("");
-  gl_log("-----------------------------\n");
+  msg = "";
+  msg += names[11] + std::string(":") + std::to_string( s );
+  gl_log( msg );
+  gl_log("-----------------------------");
+}
+
+void abort(){
+  gl_log_error( "ABORT!!!" );
+  exit( EXIT_FAILURE );
+};
+
+void quit(){
+  exit( EXIT_SUCCESS );
+};
+
+void quit( const std::string message ){
+  gl_log( "QUIT::" + message );
 }
 
 void glfw_error_callback( int error, const char* description ){
   std::string msg( "GLFW::" + std::to_string( error ) + "::" + description );
-  gl_log_error( msg.c_str() ); 
+  gl_log_error( msg.c_str() );
 }
 
 void glfw_window_size_callback( GLFWwindow* window, int width, int height ) {
   g_gl_width  = width;
   g_gl_height = height;
+  glViewport( 0, 0, g_gl_width, g_gl_height );
   /* Update perspective matrices here */
 }
 
@@ -178,30 +178,32 @@ void init_gl(){
 void init_glew(){
   glewExperimental = GL_TRUE;
   glewInit();
-  if (glewInit() != GLEW_OK)
-      abort( "Failed to initialize GLEW");
+  if (glewInit() != GLEW_OK) {
+      gl_log_error( "INIT_GLEW::Failed to initialize GLEW!" );
+      abort();
+  }
 }
 
 void init_glfw() {
-  std::string msg( "GLFW::STARTING::" );
-  msg.append( glfwGetVersionString() );
-  gl_log( msg.c_str() );
+  gl_log( std::string("IT_GLFW::Starting ") + glfwGetVersionString() );
+
   glfwSetErrorCallback( glfw_error_callback );
   if( !glfwInit() ){
-    const char* msg = "Could not start glfw.";
-    gl_log_error( msg );
-    abort( "Could not start GLFW3" );
+    gl_log_error( "INIT_GLFW::Could not start glfw!" );
+    abort();
   }
 }
 
 void log_gl_version_info(){
+  const std::string renderer( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) );
+  gl_log( std::string("Renderer: ")               + renderer );
+
   const std::string version( reinterpret_cast< char const* >( glGetString( GL_VERSION ) ) );
-  log( "Renderer: " + std::string( reinterpret_cast< char const* >( glGetString( GL_RENDERER ) ) ) );
-  log( "OpenGL Version support: " + version );
+  gl_log( std::string("OpenGL Version support: ") + version );
 }
 
 void process_input( GLFWwindow* window ) {
-  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html 
+  // List of all the keycodes and input handling commands: http://www.glfw.org/docs/latest/group__input.html
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 }
@@ -212,19 +214,195 @@ void terminate_window(){
   quit();
 }
 
-GLuint init_shader_program(){
-  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
-  glShaderSource( vertexShaderId, 1, &vertex_shader, NULL );
-  glCompileShader( vertexShaderId );
+char* read_text_from_file( const char* filepath ) {
+  gl_log( "READING::FILE::" + std::string( filepath ) );
+  std::ifstream ifs( filepath, std::ifstream::binary );
+  if( !ifs ){
+    gl_log_error( std::string( "READ_FILE::Failed to open ") + filepath + std::string("!") );
+    abort();
+  }
+  std::ostringstream sstr;
+  sstr << ifs.rdbuf();
 
+  char * cstr = new char [sstr.str().length()+1];
+  std::strcpy (cstr, sstr.str().c_str());
+
+  return cstr;
+}
+
+std::string _get_shader_info_log( GLuint shader_index ){
+  const int max_length = 2048;
+  int actual_length = 0;
+  char shader_log[ max_length ];
+  glGetShaderInfoLog( shader_index, max_length, &actual_length, shader_log );
+  return std::string( shader_log );
+}
+
+// TODO::DRY Fix repeated function between this and get_shader_info_log.
+std::string _get_program_info_log( GLuint program_index ){
+  const int max_length = 2048;
+  int actual_length = 0;
+  char shader_log[ max_length ];
+  glGetProgramInfoLog( program_index, max_length, &actual_length, shader_log );
+  return std::string( shader_log );
+}
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up.
+void _print_programme_info_log(GLuint programme) {
+  int max_length = 2048;
+  int actual_length = 0;
+  char program_log[2048];
+  glGetProgramInfoLog(programme, max_length, &actual_length, program_log);
+  printf("program info log for GL index %u:\n%s", programme, program_log);
+}
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up. Convert to gl_log()
+void _print_all_program_info( GLuint programme ) {
+  printf("--------------------\nshader programme %i info:\n", programme);
+  int params = -1;
+  glGetProgramiv(programme, GL_LINK_STATUS, &params);
+  printf("GL_LINK_STATUS = %i\n", params);
+
+  glGetProgramiv(programme, GL_ATTACHED_SHADERS, &params);
+  printf("GL_ATTACHED_SHADERS = %i\n", params);
+
+  glGetProgramiv(programme, GL_ACTIVE_ATTRIBUTES, &params);
+  printf("GL_ACTIVE_ATTRIBUTES = %i\n", params);
+  for (int i = 0; i < params; i++) {
+    char name[64];
+    int max_length = 64;
+    int actual_length = 0;
+    int size = 0;
+    GLenum type;
+    glGetActiveAttrib (
+      programme,
+      i,
+      max_length,
+      &actual_length,
+      &size,
+      &type,
+      name
+    );
+    if (size > 1) {
+      for(int j = 0; j < size; j++) {
+        char long_name[64];
+        sprintf(long_name, "%s[%i]", name, j);
+        int location = glGetAttribLocation(programme, long_name);
+        printf("  %i) type:%s name:%s location:%i\n",
+          i, GL_type_to_string(type), long_name, location);
+      }
+    } else {
+      int location = glGetAttribLocation(programme, name);
+      printf("  %i) type:%s name:%s location:%i\n",
+        i, GL_type_to_string(type), name, location);
+    }
+  }
+
+  glGetProgramiv(programme, GL_ACTIVE_UNIFORMS, &params);
+  printf("GL_ACTIVE_UNIFORMS = %i\n", params);
+  for(int i = 0; i < params; i++) {
+    char name[64];
+    int max_length = 64;
+    int actual_length = 0;
+    int size = 0;
+    GLenum type;
+    glGetActiveUniform(
+      programme,
+      i,
+      max_length,
+      &actual_length,
+      &size,
+      &type,
+      name
+    );
+    if(size > 1) {
+      for(int j = 0; j < size; j++) {
+        char long_name[64];
+        sprintf(long_name, "%s[%i]", name, j);
+        int location = glGetUniformLocation(programme, long_name);
+        printf("  %i) type:%s name:%s location:%i\n",
+          i, GL_type_to_string(type), long_name, location);
+      }
+    } else {
+      int location = glGetUniformLocation(programme, name);
+      printf("  %i) type:%s name:%s location:%i\n",
+        i, GL_type_to_string(type), name, location);
+    }
+  }
+
+  _print_programme_info_log(programme);
+  printf("shader programme %i end info.\n--------------------\n", programme);
+}
+
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up.
+bool _validate_shader_program( GLuint programme ) {
+  glValidateProgram(programme);
+  int params = -1;
+  glGetProgramiv(programme, GL_VALIDATE_STATUS, &params);
+  printf("program %i GL_VALIDATE_STATUS = %i\n", programme, params);
+  if (GL_TRUE != params) {
+    _print_programme_info_log(programme);
+    return false;
+  }
+  return true;
+}
+
+void check_shader_compile( GLuint shaderId ) {
+  int params = -1;
+  glGetShaderiv( shaderId, GL_COMPILE_STATUS, &params );
+  if( GL_TRUE != params ){
+    gl_log_error( "INIT_SHADER_PROGRAM::COMPILE_ERROR:: GL shader index " + std::to_string( shaderId ) + " failed to compile." );
+    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_LOG...\n" + _get_shader_info_log( shaderId ) );
+		abort();
+  }
+  gl_log( "INIT_SHADER_PROGRAM::COMPILE::OK index: " + std::to_string( shaderId ) );
+}
+
+void check_shader_program_linking( GLuint programId ) {
+  int params = -1;
+  glGetProgramiv( programId, GL_LINK_STATUS, &params );
+  if( GL_TRUE != params ){
+    gl_log_error( "INIT_SHADER_PROGRAM::LINKING_ERROR:: GL Program index " + std::to_string( programId ) + " failed to link." );
+    gl_log_error( "INIT_SHADER_PROGRAM::PROGRAM_LOG...\n" + _get_program_info_log( programId ) );
+		abort();
+  }
+  gl_log( "INIT_SHADER_PROGRAM::COMPILE::OK index: " + std::to_string( programId ) );
+}
+
+GLuint init_shader_program(){
+
+  const char* vertex_shader_code = read_text_from_file( GENERIC_VERTEX_SHADER_FILE );
+  GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
+  glShaderSource( vertexShaderId, 1, &vertex_shader_code, NULL );
+  glCompileShader( vertexShaderId );
+  check_shader_compile( vertexShaderId );
+	std::cout.flush();
+
+  // TODO::DRY Fix Repeated stanza
+  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE );
   GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
-  glShaderSource( fragmentShaderId, 1, &fragment_shader, NULL );
+  glShaderSource( fragmentShaderId, 1, &fragment_shader_code, NULL );
   glCompileShader( fragmentShaderId );
+  check_shader_compile( fragmentShaderId );
+	std::cout.flush();
 
   GLuint shaderProgramId = glCreateProgram();
   glAttachShader( shaderProgramId, vertexShaderId );
   glAttachShader( shaderProgramId, fragmentShaderId );
   glLinkProgram( shaderProgramId );
+
+	check_shader_program_linking( shaderProgramId );
+	std::cout.flush();
+
+	_print_all_program_info( shaderProgramId );
+
+  GLint uniformLoc = glGetUniformLocation( shaderProgramId, "inputColor" );
+  gl_log( "INIT_SHADER_PROGRAM::UNIFORM_LOCATION::inputColor::" + std::to_string( uniformLoc ) );
+  glUseProgram( shaderProgramId );
+  glUniform4f( uniformLoc, 0.5, 0.0, 0.5, 1.0 );
+
+	// _validate_shader_program( shaderProgramId ); // Expensive, avoid unless needed for debug.
 
   return shaderProgramId;
 }
@@ -258,9 +436,9 @@ GLFWwindow* init_window(){
 
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* videoMode = glfwGetVideoMode( monitor );
-  ss << "VIDEO_MODE::width:" << videoMode->width << ",height:" << videoMode->height << 
-                ",redBits:" << videoMode->redBits << ",blueBits:" << videoMode->blueBits << ",greenBits:" << videoMode->greenBits <<
-                ",refreshRate:" << videoMode->refreshRate;
+  ss << "VIDEO_MODE::width:" << videoMode->width << ", height:" << videoMode->height <<
+                ", redBits:" << videoMode->redBits << ", blueBits:" << videoMode->blueBits << ", greenBits:" << videoMode->greenBits <<
+                ", refreshRate:" << videoMode->refreshRate;
   gl_log( ss.str().c_str() );
   ss.clear();
   ss.str("");
@@ -268,20 +446,15 @@ GLFWwindow* init_window(){
   if( WINDOW_FULL_SCREEN ){
     g_gl_width  = videoMode->width;
     g_gl_height = videoMode->height;
-    char tmp[128];
-    sprintf( tmp, "INIT_WINDOW::Full screen window. width: %d, height: %d.", g_gl_width, g_gl_height );
-    gl_log( tmp );
+    gl_log( "INIT_WINDOW::FULL_SCREEN:: width: " + std::to_string( g_gl_width ) + ",height: " + std::to_string( g_gl_height ) );
   }
-  char tmp[128];
-  sprintf( tmp, "INIT_WINDOW::width: %d, height: %d, title: %s.", g_gl_width, g_gl_height, WINDOW_TITLE );
-  gl_log( tmp ); 
+  gl_log( "INIT_WINDOW:: width: " + std::to_string( g_gl_width ) + ", height: " + std::to_string( g_gl_height ) );
 
   GLFWwindow* w = glfwCreateWindow( g_gl_width, g_gl_height, WINDOW_TITLE, NULL, NULL );
   if( !w ) {
     glfwTerminate();
-    const char* msg = "INIT_WINDOW::Could not open window with GLFW3.";
-    gl_log_error( msg );
-    abort( msg );
+    gl_log_error( "INIT_WINDOW::Could not open window with GLFW3!" );
+    abort();
   }
   glfwMakeContextCurrent( w );
   glfwSetWindowSizeCallback( w, glfw_window_size_callback );
@@ -289,14 +462,13 @@ GLFWwindow* init_window(){
   return w;
 }
 
-#define WINDOW_TITLE_FPS_DEBOUNCE 0.25
 void _update_fps_counter( GLFWwindow* window ){
   static double previous_seconds = glfwGetTime();
   static int frame_count;
   double current_seconds = glfwGetTime();
   double elapsed_seconds = current_seconds - previous_seconds;
   if( elapsed_seconds > WINDOW_TITLE_FPS_DEBOUNCE ) {
-    previous_seconds = current_seconds; 
+    previous_seconds = current_seconds;
     double fps = (double)frame_count / elapsed_seconds;
     char tmp[128];
     sprintf( tmp, "WINDOW_TITLE : drawing @ %.2f fps", fps );
@@ -306,15 +478,14 @@ void _update_fps_counter( GLFWwindow* window ){
   frame_count++;
 }
 
-void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
+void render_loop( GLFWwindow* window, GLuint gpuProgramId, GLuint vaoId ) {
   while( !glfwWindowShouldClose( window ) ){
     _update_fps_counter( window );
     // New buffer state
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glViewport( 0, 0, g_gl_width, g_gl_height );
 
     // Drawing
-    glUseProgram( shaderId );
+    glUseProgram( gpuProgramId );
     glBindVertexArray( vaoId );
     glDrawArrays( GL_TRIANGLES, 0, 3 );
 
@@ -327,17 +498,24 @@ void render_loop( GLFWwindow* window, GLuint shaderId, GLuint vaoId ) {
   }
 }
 
-int main() {
-  assert( restart_gl_log() );
+GLFWwindow* setup() {
   init_glfw();
-
-  GLFWwindow* window = init_window();
+  GLFWwindow* w = init_window();
   init_glew();
-  log_gl_version_info();
   init_gl();
+  log_gl_version_info();
+  return w;
+}
+
+int main() {
+  assert( gl_log_restart() );
+
+  GLFWwindow* window = setup();
+
+  GLuint shaderProgramId = init_shader_program();
 
   GLuint triangleVaoId = init_triangle_vao( triangleVerts );
-  GLuint shaderProgramId = init_shader_program();
+  glViewport( 0, 0, g_gl_width, g_gl_height );
 
   render_loop( window, shaderProgramId, triangleVaoId );
 

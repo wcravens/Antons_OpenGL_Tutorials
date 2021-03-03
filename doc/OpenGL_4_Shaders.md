@@ -223,3 +223,42 @@ was set active by the `glUseProgram( id )` function.
 `GL_ACTIVE_UNIFORMS`, and `GL_ACTIVE_UNIFORM_MAX_LENGTH`.
 
 (3)`glGetProgramiv` with `GL_ACTIVE_ATTRIBUTES` will give you a list of active attributes.
+
+## General Conventions
+
+  - All uniform variables are intitialised to 0 when a programme links,
+so you only need to initialise them if the initial value should be
+something else. Example: you might want to set matrices to the identity
+matrix, rather than a zeroed matrix.
+
+  - Calling glUniform is quite expensive during run-time. Structure your
+programme so that glUniform is only called when the value needs to
+change. This might be the case every time that you draw a new object
+(e.g. its position might be different), but some uniforms may not change
+often (e.g. projection matrix).
+
+  - Calling glGetUniformLocation during run-time can be expensive. It is
+best to do this during intialisation of the component that updates the
+uniform e.g. the virtual camera for the projection and view matrices, or
+a renderable object in the scene for the model matrix. Store the uniform
+locations once, then call glUniform as needed, rather than updating
+everything every frame.
+
+  - When calling glGetUniformLocation, it returns -1 if the uniform
+variable wasn't found to be active. You can check for this. Usually it
+means that either you've made a typo in the name, or the variable isn't
+actually used anywhere in the shader, and has been "optimised out" by
+the compiler/linker.
+
+  - Modifying attributes (vertex buffers) during run-time is extremely
+expensive. Avoid.
+
+  - Get your shaders to do as much work as is possible; because of their
+parallel nature they are much faster than looping on the CPU for most
+tasks.
+
+  - Drawing lots of separate, small objects at once does not make
+efficient use of the GPU, as most parallel shader slots will be empty,
+and separate objects must be drawn in series. Where possible, merge
+many, smaller objects into fewer, larger objects.
+

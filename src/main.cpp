@@ -30,6 +30,27 @@ const GLfloat triangleVerts[] = {
 int g_gl_width  = WINDOW_WIDTH;
 int g_gl_height = WINDOW_HEIGHT;
 
+const char* GL_type_to_string(GLenum type) {
+  switch(type) {
+    case GL_BOOL: return "bool";
+    case GL_INT: return "int";
+    case GL_FLOAT: return "float";
+    case GL_FLOAT_VEC2: return "vec2";
+    case GL_FLOAT_VEC3: return "vec3";
+    case GL_FLOAT_VEC4: return "vec4";
+    case GL_FLOAT_MAT2: return "mat2";
+    case GL_FLOAT_MAT3: return "mat3";
+    case GL_FLOAT_MAT4: return "mat4";
+    case GL_SAMPLER_2D: return "sampler2D";
+    case GL_SAMPLER_3D: return "sampler3D";
+    case GL_SAMPLER_CUBE: return "samplerCube";
+    case GL_SAMPLER_2D_SHADOW: return "sampler2DShadow";
+    default: break;
+  }
+  return "other";
+}
+
+
 bool _gl_log_to_file( std::string msg ){
   std::ofstream ofs( GL_LOG_FILE, std::ofstream::out | std::ofstream::app );
   if( ! ofs.is_open() ){
@@ -215,39 +236,173 @@ std::string _get_shader_info_log( GLuint shader_index ){
   char shader_log[ max_length ];
   glGetShaderInfoLog( shader_index, max_length, &actual_length, shader_log );
   return std::string( shader_log );
-  gl_log( "SHADER::INFO_LOG:: index:" + std::to_string( shader_index ) + std::string( shader_log ) );
+}
+
+// TODO::DRY Fix repeated function between this and get_shader_info_log.
+std::string _get_program_info_log( GLuint program_index ){
+  const int max_length = 2048;
+  int actual_length = 0;
+  char shader_log[ max_length ];
+  glGetProgramInfoLog( program_index, max_length, &actual_length, shader_log );
+  return std::string( shader_log );
+}
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up.
+void _print_programme_info_log(GLuint programme) {
+  int max_length = 2048;
+  int actual_length = 0;
+  char program_log[2048];
+  glGetProgramInfoLog(programme, max_length, &actual_length, program_log);
+  printf("program info log for GL index %u:\n%s", programme, program_log);
+}
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up. Convert to gl_log()
+void _print_all_program_info( GLuint programme ) {
+  printf("--------------------\nshader programme %i info:\n", programme);
+  int params = -1;
+  glGetProgramiv(programme, GL_LINK_STATUS, &params);
+  printf("GL_LINK_STATUS = %i\n", params);
+
+  glGetProgramiv(programme, GL_ATTACHED_SHADERS, &params);
+  printf("GL_ATTACHED_SHADERS = %i\n", params);
+
+  glGetProgramiv(programme, GL_ACTIVE_ATTRIBUTES, &params);
+  printf("GL_ACTIVE_ATTRIBUTES = %i\n", params);
+  for (int i = 0; i < params; i++) {
+    char name[64];
+    int max_length = 64;
+    int actual_length = 0;
+    int size = 0;
+    GLenum type;
+    glGetActiveAttrib (
+      programme,
+      i,
+      max_length,
+      &actual_length,
+      &size,
+      &type,
+      name
+    );
+    if (size > 1) {
+      for(int j = 0; j < size; j++) {
+        char long_name[64];
+        sprintf(long_name, "%s[%i]", name, j);
+        int location = glGetAttribLocation(programme, long_name);
+        printf("  %i) type:%s name:%s location:%i\n",
+          i, GL_type_to_string(type), long_name, location);
+      }
+    } else {
+      int location = glGetAttribLocation(programme, name);
+      printf("  %i) type:%s name:%s location:%i\n",
+        i, GL_type_to_string(type), name, location);
+    }
+  }
+
+  glGetProgramiv(programme, GL_ACTIVE_UNIFORMS, &params);
+  printf("GL_ACTIVE_UNIFORMS = %i\n", params);
+  for(int i = 0; i < params; i++) {
+    char name[64];
+    int max_length = 64;
+    int actual_length = 0;
+    int size = 0;
+    GLenum type;
+    glGetActiveUniform(
+      programme,
+      i,
+      max_length,
+      &actual_length,
+      &size,
+      &type,
+      name
+    );
+    if(size > 1) {
+      for(int j = 0; j < size; j++) {
+        char long_name[64];
+        sprintf(long_name, "%s[%i]", name, j);
+        int location = glGetUniformLocation(programme, long_name);
+        printf("  %i) type:%s name:%s location:%i\n",
+          i, GL_type_to_string(type), long_name, location);
+      }
+    } else {
+      int location = glGetUniformLocation(programme, name);
+      printf("  %i) type:%s name:%s location:%i\n",
+        i, GL_type_to_string(type), name, location);
+    }
+  }
+
+  _print_programme_info_log(programme);
+  printf("shader programme %i end info.\n--------------------\n", programme);
+}
+
+
+// TODO: Copied verbatim from tutorial.  Needs tidied up.
+bool _validate_shader_program( GLuint programme ) {
+  glValidateProgram(programme);
+  int params = -1;
+  glGetProgramiv(programme, GL_VALIDATE_STATUS, &params);
+  printf("program %i GL_VALIDATE_STATUS = %i\n", programme, params);
+  if (GL_TRUE != params) {
+    _print_programme_info_log(programme);
+    return false;
+  }
+  return true;
+}
+
+void check_shader_compile( GLuint shaderId ) {
+  int params = -1;
+  glGetShaderiv( shaderId, GL_COMPILE_STATUS, &params );
+  if( GL_TRUE != params ){
+    gl_log_error( "INIT_SHADER_PROGRAM::COMPILE_ERROR:: GL shader index " + std::to_string( shaderId ) + " failed to compile." );
+    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_LOG...\n" + _get_shader_info_log( shaderId ) );
+		abort();
+  }
+  gl_log( "INIT_SHADER_PROGRAM::COMPILE::OK index: " + std::to_string( shaderId ) );
+}
+
+void check_shader_program_linking( GLuint programId ) {
+  int params = -1;
+  glGetProgramiv( programId, GL_LINK_STATUS, &params );
+  if( GL_TRUE != params ){
+    gl_log_error( "INIT_SHADER_PROGRAM::LINKING_ERROR:: GL Program index " + std::to_string( programId ) + " failed to link." );
+    gl_log_error( "INIT_SHADER_PROGRAM::PROGRAM_LOG...\n" + _get_program_info_log( programId ) );
+		abort();
+  }
+  gl_log( "INIT_SHADER_PROGRAM::COMPILE::OK index: " + std::to_string( programId ) );
 }
 
 GLuint init_shader_program(){
-  const char* vertex_shader_code;
-  vertex_shader_code = read_text_from_file( GENERIC_VERTEX_SHADER_FILE );
+
+  const char* vertex_shader_code = read_text_from_file( GENERIC_VERTEX_SHADER_FILE );
   GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
   glShaderSource( vertexShaderId, 1, &vertex_shader_code, NULL );
   glCompileShader( vertexShaderId );
-  gl_log( vertex_shader_code );
-  int params = -1;
-  glGetShaderiv( vertexShaderId, GL_COMPILE_STATUS, &params );
-  if( GL_TRUE != params ){
-    gl_log_error( "INIT_SHADER_PROGRAM::COMPILE_ERROR:: GL shader index " + std::to_string( vertexShaderId ) + " failed to compile." );
-    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_LOG...\n" + _get_shader_info_log( vertexShaderId ) );
-    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_SOURCE_CODE::\n" + std::string( vertex_shader_code ) );
-    abort();
-  }
+  check_shader_compile( vertexShaderId );
+	std::cout.flush();
 
+  // TODO::DRY Fix Repeated stanza
   const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE );
   GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
   glShaderSource( fragmentShaderId, 1, &fragment_shader_code, NULL );
   glCompileShader( fragmentShaderId );
+  check_shader_compile( fragmentShaderId );
+	std::cout.flush();
 
   GLuint shaderProgramId = glCreateProgram();
   glAttachShader( shaderProgramId, vertexShaderId );
   glAttachShader( shaderProgramId, fragmentShaderId );
   glLinkProgram( shaderProgramId );
 
+	check_shader_program_linking( shaderProgramId );
+	std::cout.flush();
+
+	_print_all_program_info( shaderProgramId );
+
   GLint uniformLoc = glGetUniformLocation( shaderProgramId, "inputColor" );
   gl_log( "INIT_SHADER_PROGRAM::UNIFORM_LOCATION::inputColor::" + std::to_string( uniformLoc ) );
   glUseProgram( shaderProgramId );
   glUniform4f( uniformLoc, 0.5, 0.0, 0.5, 1.0 );
+
+	// _validate_shader_program( shaderProgramId ); // Expensive, avoid unless needed for debug.
 
   return shaderProgramId;
 }

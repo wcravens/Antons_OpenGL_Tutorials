@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstring>
+#include <string>
 #include <assert.h>
 #include <time.h>
 #include <stdarg.h>
@@ -191,7 +193,7 @@ void terminate_window(){
   quit();
 }
 
-std::string read_text_from_file( const char* filepath ) {
+char* read_text_from_file( const char* filepath ) {
   gl_log( "READING::FILE::" + std::string( filepath ) );
   std::ifstream ifs( filepath, std::ifstream::binary );
   if( !ifs ){
@@ -200,20 +202,39 @@ std::string read_text_from_file( const char* filepath ) {
   }
   std::ostringstream sstr;
   sstr << ifs.rdbuf();
-  return sstr.str();
+
+  char * cstr = new char [sstr.str().length()+1];
+  std::strcpy (cstr, sstr.str().c_str());
+
+  return cstr;
 }
 
-
+std::string _get_shader_info_log( GLuint shader_index ){
+  const int max_length = 2048;
+  int actual_length = 0;
+  char shader_log[ max_length ];
+  glGetShaderInfoLog( shader_index, max_length, &actual_length, shader_log );
+  return std::string( shader_log );
+  gl_log( "SHADER::INFO_LOG:: index:" + std::to_string( shader_index ) + std::string( shader_log ) );
+}
 
 GLuint init_shader_program(){
-  gl_log( "INIT_SHADER_PROGRAM::..." );
-  const char* vertex_shader_code    = read_text_from_file( GENERIC_VERTEX_SHADER_FILE ).c_str();
-  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE ).c_str();
-
+  const char* vertex_shader_code;
+  vertex_shader_code = read_text_from_file( GENERIC_VERTEX_SHADER_FILE );
   GLuint vertexShaderId = glCreateShader( GL_VERTEX_SHADER );
   glShaderSource( vertexShaderId, 1, &vertex_shader_code, NULL );
   glCompileShader( vertexShaderId );
+  gl_log( vertex_shader_code );
+  int params = -1;
+  glGetShaderiv( vertexShaderId, GL_COMPILE_STATUS, &params );
+  if( GL_TRUE != params ){
+    gl_log_error( "INIT_SHADER_PROGRAM::COMPILE_ERROR:: GL shader index " + std::to_string( vertexShaderId ) + " failed to compile." );
+    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_LOG...\n" + _get_shader_info_log( vertexShaderId ) );
+    gl_log_error( "INIT_SHADER_PROGRAM::SHADER_SOURCE_CODE::\n" + std::string( vertex_shader_code ) );
+    abort();
+  }
 
+  const char* fragment_shader_code  = read_text_from_file( GENERIC_FRAGMENT_SHADER_FILE );
   GLuint fragmentShaderId = glCreateShader( GL_FRAGMENT_SHADER );
   glShaderSource( fragmentShaderId, 1, &fragment_shader_code, NULL );
   glCompileShader( fragmentShaderId );
@@ -222,9 +243,6 @@ GLuint init_shader_program(){
   glAttachShader( shaderProgramId, vertexShaderId );
   glAttachShader( shaderProgramId, fragmentShaderId );
   glLinkProgram( shaderProgramId );
-
-  int params = -1;
-  glGetProgramiv( shaderProgramId, GL_ACTIVE_UNIFORMS, &params );
 
   GLint uniformLoc = glGetUniformLocation( shaderProgramId, "inputColor" );
   gl_log( "INIT_SHADER_PROGRAM::UNIFORM_LOCATION::inputColor::" + std::to_string( uniformLoc ) );
